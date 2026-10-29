@@ -1,7 +1,7 @@
 using Sudoku.Application.Ports;
 using Domain;
 
-namespace Application.UseCases;
+namespace Sudoku.Application.UseCases;
 
 /// <summary>
 /// Calcula una pista tomando el valor de la solución del puzzle. No modifica el tablero:
