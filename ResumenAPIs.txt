@@ -1,0 +1,206 @@
+// --- Board.cs ---
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace Domain;
+/// <summary>Tablero inmutable de 81 celdas. Cada modificación devuelve un tablero nuevo.</summary>
+public sealed class Board : IEquatable<Board>
+{
+    public static Board Empty { get; }
+
+    public Cell this[Position position] => _cells[position.Index];
+    /// <summary>
+    /// Crea un tablero donde cada dígito 1-9 es una celda dada y '0' o '.' es una celda vacía.
+    /// </summary>
+    public static Board FromGivens(string puzzle);
+    public Board WithValue(Position position, int value);
+    public Board WithNotes(Position position, CandidateSet notes);
+    public Board WithCleared(Position position);
+    public Board GivensOnly();
+    /// <summary>81 caracteres con el valor de cada celda (dadas y del jugador); '0' si está vacía.</summary>
+    public string ToValuesString();
+    public bool Equals(Board? other);
+    public override bool Equals(object? obj);
+    public override int GetHashCode();
+}
+
+// --- CandidateSet.cs ---
+using System.Collections;
+using System.Numerics;
+
+namespace Domain;
+/// <summary>Conjunto inmutable de candidatos (1-9) representado con un bitmask.</summary>
+public readonly struct CandidateSet : IEquatable<CandidateSet>, IEnumerable<int>
+{
+    public static CandidateSet Empty => default;
+    public static CandidateSet All => new(AllBits);
+    public int Count => BitOperations.PopCount(_bits);
+    public bool IsEmpty => _bits == 0;
+
+    public static CandidateSet Of(params int[] values);
+    public bool Contains(int value);
+    public CandidateSet Add(int value);
+    public CandidateSet Remove(int value);
+    public CandidateSet Toggle(int value);
+    public CandidateSet Union(CandidateSet other);
+    public CandidateSet Except(CandidateSet other);
+    public IEnumerator<int> GetEnumerator();
+    public bool Equals(CandidateSet other);
+    public override bool Equals(object? obj);
+    public override int GetHashCode();
+    public override string ToString();
+    public static bool operator ==(CandidateSet left, CandidateSet right);
+    public static bool operator !=(CandidateSet left, CandidateSet right);
+}
+
+// --- Cell.cs ---
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace Domain;
+/// <summary>
+/// Celda inmutable. Invariantes: una celda dada siempre tiene valor, no tiene notas y no se puede modificar;
+/// las notas solo existen en celdas vacías.
+/// </summary>
+public readonly record struct Cell
+{
+    public int? Value { get; }
+    public bool IsGiven { get; }
+    public CandidateSet Notes { get; }
+    public bool IsEmpty => Value is null;
+    public static Cell Empty => default;
+
+    public static Cell Given(int value);
+    /// <summary>Coloca un valor del jugador. Limpia las notas de la propia celda.</summary>
+    public Cell WithValue(int value);
+    public Cell WithNotes(CandidateSet notes);
+    /// <summary>Borra valor y notas de una celda del jugador.</summary>
+    public Cell Cleared();
+}
+
+// --- Position.cs ---
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace Domain;
+public readonly record struct Position
+{
+    public Position(int row, int column);
+    public int Row { get; }
+    public int Column { get; }
+    /// <summary>Índice de la caja 3x3 (0-8, de izquierda a derecha y de arriba abajo).</summary>
+    public int Box => (Row / SudokuConstants.BoxSize) * SudokuConstants.BoxSize + Column / SudokuConstants.BoxSize;
+    /// <summary>Índice lineal (0-80), por filas.</summary>
+    public int Index => Row * SudokuConstants.Size + Column;
+    /// <summary>Las 81 posiciones del tablero, en orden por filas.</summary>
+    public static IReadOnlyList<Position> All { get; }
+
+    public static Position FromIndex(int index);
+}
+
+// --- SudokuConstants.cs ---
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace Domain;
+/// <summary>Dimensiones y rango de valores del Sudoku clásico. Única fuente de estas constantes.</summary>
+public static class SudokuConstants
+{
+    public const int Size = 9;
+    public const int BoxSize = 3;
+    public const int CellCount = Size * Size;
+    public const int MinValue = 1;
+    public const int MaxValue = Size;
+}
+
+// --- SudokuRules.cs ---
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace Domain;
+/// <summary>Única fuente de las reglas de fila, columna y caja. Pura y sin estado.</summary>
+public static class SudokuRules
+{
+    /// <summary>Las 20 posiciones que comparten fila, columna o caja con <paramref name = "position"/> (sin incluirla).</summary>
+    public static IReadOnlyList<Position> Peers(Position position);
+    /// <summary>Indica si <paramref name = "value"/> no aparece en ningún peer de <paramref name = "position"/>.</summary>
+    public static bool IsValidPlacement(Board board, Position position, int value);
+    /// <summary>Posiciones cuyo valor está repetido en su fila, columna o caja (se marcan ambas celdas del par).</summary>
+    public static IReadOnlySet<Position> FindConflicts(Board board);
+    public static bool IsComplete(Board board);
+    public static bool IsSolved(Board board);
+}
+
+// --- ValueGuard.cs ---
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace Domain;
+public static class ValueGuard
+{
+    public static void EnsureValid(int value, string paramName);
+}
+
+// --- ISolver.cs ---
+using Domain;
+
+namespace Application.Ports;
+/// <summary>Puerto del solver. Lo implementa Infrastructure.</summary>
+public interface ISolver
+{
+    /// <summary>
+    /// Resuelve el tablero tal como llega: todos los valores presentes (dados y del jugador) se tratan como fijos.
+    /// Devuelve <c>null</c> si no tiene solución. Las celdas dadas conservan <c>IsGiven</c>; las resueltas son valores de jugador.
+    /// </summary>
+    Board? Solve(Board board);
+    /// <summary>
+    /// Cuenta las soluciones del tablero y se detiene al llegar a <paramref name = "limit"/> (mínimo 1).
+    /// Con <c>limit = 2</c> basta para comprobar unicidad (0 = sin solución, 1 = única, 2 = varias).
+    /// </summary>
+    int CountSolutions(Board board, int limit);
+}
+
+// --- GetHint.cs ---
+using Application.Ports;
+using Domain;
+
+namespace Application.UseCases;
+/// <summary>
+/// Calcula una pista tomando el valor de la solución del puzzle. No modifica el tablero:
+/// aplicar la pista es responsabilidad del llamador (p. ej. el caso de uso PlaceValue).
+/// </summary>
+public sealed class GetHint(ISolver solver)
+{
+    /// <summary>
+    /// Devuelve la pista para <paramref name = "preferred"/> si esa celda está vacía; si no, para la primera celda vacía.
+    /// Devuelve <c>null</c> cuando no queda ninguna celda vacía.
+    /// </summary>
+    /// <exception cref = "InvalidOperationException">Las celdas dadas no tienen solución.</exception>
+    public Hint? Execute(Board board, Position? preferred = null);
+}
+
+// --- Hint.cs ---
+using Domain;
+
+namespace Application.UseCases;
+/// <summary>Pista: el valor correcto de una celda vacía.</summary>
+public readonly record struct Hint(Position Position, int Value);
+
+// --- BacktrackingSolver.cs ---
+using Application.Ports;
+using Domain;
+
+namespace Infrastructure.Solving;
+/// <summary>Solver por backtracking que siempre expande la celda con menos candidatos. Sin estado: es seguro reutilizarlo.</summary>
+public sealed class BacktrackingSolver : ISolver
+{
+    public Board? Solve(Board board);
+    public int CountSolutions(Board board, int limit);
+}
+
