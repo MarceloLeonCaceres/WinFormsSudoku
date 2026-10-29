@@ -8,8 +8,8 @@ namespace Sudoku.Application.UseCases;
 /// Genera un puzzle y abre una partida nueva. La generación es CPU-bound y síncrona:
 /// el presenter debe llamarla con <c>Task.Run</c> y pasar un <see cref="CancellationToken"/>.
 /// </summary>
-public sealed class StartNewGame(IPuzzleGenerator generator)
+public sealed class StartNewGame(IPuzzleGenerator generator, IClock clock)
 {
     public GameSession Execute(Difficulty difficulty, CancellationToken ct = default)
-        => new(generator.Generate(difficulty, ct));
+        => new(generator.Generate(difficulty, ct), clock);
 }
