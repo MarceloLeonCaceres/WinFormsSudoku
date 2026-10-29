@@ -5,6 +5,8 @@
     <Project Path="src/Infrastructure/Infrastructure.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Application.Tests.Unit/Application.Tests.Unit.csproj" Id="0e6fe9d4-4822-4d46-a0a5-9409b6079fe6" />
     <Project Path="tests/Domain.Tests.Unit/Domain.Tests.Unit.csproj" />
+    <Project Path="tests/Infrastructure.Tests.Unit/Infrastructure.Tests.Unit.csproj" Id="629bab55-b302-401a-994e-223427b0fcb0" />
   </Folder>
 </Solution>
