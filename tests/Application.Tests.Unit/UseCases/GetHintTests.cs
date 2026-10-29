@@ -1,4 +1,4 @@
-using Application.UseCases;
+using Sudoku.Application.UseCases;
 using Domain;
 
 namespace Application.Tests.UseCases;
