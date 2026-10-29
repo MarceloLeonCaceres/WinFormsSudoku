@@ -3,6 +3,7 @@ using Domain;
 using global::Sudoku.Application.Ports;
 using global::Sudoku.Application.Puzzles;
 using global::Sudoku.Application.UseCases;
+using Sudoku.Application.Tests.TestDoubles;
 
 namespace Application.Tests.Unit;
 
@@ -25,7 +26,7 @@ public class StartNewGameTests
     public void CreatesSessionFromGeneratedPuzzle()
     {
         var puzzle = SamplePuzzle.Create(Difficulty.Expert);
-        var useCase = new StartNewGame(new StubPuzzleGenerator(puzzle));
+        var useCase = new StartNewGame(new StubPuzzleGenerator(puzzle), new FakeClock());
 
         var session = useCase.Execute(Difficulty.Expert);
 
@@ -40,7 +41,7 @@ public class StartNewGameTests
         var generator = new StubPuzzleGenerator(SamplePuzzle.Create(Difficulty.Medium));
         using var cts = new CancellationTokenSource();
 
-        new StartNewGame(generator).Execute(Difficulty.Medium, cts.Token);
+        new StartNewGame(generator, new FakeClock()).Execute(Difficulty.Medium, cts.Token);
 
         Assert.Equal(Difficulty.Medium, generator.RequestedDifficulty);
         Assert.Equal(cts.Token, generator.ReceivedToken);
