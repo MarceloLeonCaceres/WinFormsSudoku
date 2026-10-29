@@ -70,12 +70,14 @@ Casos de uso y contratos.
 
 Casos de uso (uno por clase, responsabilidad única):
 
-- `StartNewGame`, `PlaceValue`, `ClearCell`, `ToggleNote`
+- `StartNewGame` (genera el puzzle y devuelve una GameSession), `PlaceValue`, `ClearCell`, `ToggleNote`
 - `Undo`, `Redo`
 - `GetHint`, `SolveGame` (ya existe, se adelantó del hito 4 al 2)
 - `SaveGame`, `LoadGame`
 - `GetStatistics`, `ChangeTheme`
-- PlaceValue es quien limpia los candidatos de los peers
+- `PlaceValue` es quien limpia los candidatos de los peers
+- `ApplyHint` usa GetHint y PlaceValue
+    
   Puertos (interfaces):
 
 - `ISolver` tiene Solve y CountSolutions(limit)
@@ -89,6 +91,7 @@ Modelos y políticas:
 
 - `Puzzle` (Board, Solution, Difficulty) — resultado del generador
 - `DifficultyProfile` — rango de celdas dadas por dificultad (única fuente de estos rangos)
+- `GameSession` — tablero actual más historial de snapshots; única pieza mutable de Application; no es thread-safe
 
 ### Infrastructure
 
@@ -143,9 +146,9 @@ Carpeta: `%AppData%\SudokuGame\`
 ## 8. Hitos
 
 1. Dominio y reglas (completado)
-2. Solver
-3. Generador y dificultades
-4. Casos de uso (colocar, notas, deshacer / rehacer, pistas)
+2. Solver (completado)
+3. Generador y dificultades (completado)
+4. Casos de uso (colocar, notas, deshacer / rehacer, pistas) (completado)
 5. Persistencia JSON (partidas, estadísticas, tema)
 6. UI WinForms con temas
 7. Pulido y pruebas
@@ -170,3 +173,10 @@ Carpeta: `%AppData%\SudokuGame\`
 | 2026-10-29 | Generador: solución sembrada con cajas diagonales + quitar celdas con unicidad (`CountSolutions(…, 2)`) |
 | 2026-10-29 | `Random` inyectable en `PuzzleGenerator`, sin puerto nuevo; sin simetría |
 | 2026-10-29 | Completado Hito 3 |
+| 2026-10-29 | GameSession (Application): tablero actual + historial de snapshots de Board |
+| 2026-10-29 | Casos de uso de edición devuelven bool; celdas dadas se ignoran sin excepción |
+| 2026-10-29 | PlaceValue permite valores en conflicto; la UI los marca con FindConflicts |
+| 2026-10-29 | Cada acción del usuario es un único paso de deshacer |
+| 2026-10-29 | ApplyHint compone GetHint + PlaceValue; StartNewGame sin tiempo ni IClock |
+| 2026-10-29 | Namespaces de Application unificados en Sudoku.Application.*; Puzzles.cs → Puzzle.cs |
+| 2026-10-29 | Completado Hito 4 |

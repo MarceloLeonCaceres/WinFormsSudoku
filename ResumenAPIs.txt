@@ -147,6 +147,30 @@ public static class ValueGuard
     public static void EnsureValid(int value, string paramName);
 }
 
+// --- GameSession.cs ---
+using Domain;
+using global::Sudoku.Application.Puzzles;
+
+namespace Sudoku.Application.Games;
+/// <summary>
+/// Partida en curso: tablero actual e historial de deshacer/rehacer.
+/// Es la única pieza mutable de Application. Como <see cref = "Board"/> es inmutable,
+/// el historial guarda snapshots sin copiar datos. No es thread-safe: úsala desde el hilo de UI.
+/// </summary>
+public sealed class GameSession
+{
+    public GameSession(Puzzle puzzle);
+    public Board Board { get; private set; }
+    public Difficulty Difficulty { get; }
+    public bool CanUndo => _undo.Count > 0;
+    public bool CanRedo => _redo.Count > 0;
+
+    /// <summary>Adopta <paramref name = "next"/> como tablero actual. Devuelve <c>false</c> si no cambia nada.</summary>
+    public bool Apply(Board next);
+    public bool Undo();
+    public bool Redo();
+}
+
 // --- IPuzzleGenerator.cs ---
 using Domain;
 using Sudoku.Application.Puzzles;
@@ -190,18 +214,45 @@ public sealed record DifficultyProfile(Difficulty Difficulty, int MinGivens, int
     public static DifficultyProfile For(Difficulty difficulty);
 }
 
-// --- Puzzles.cs ---
+// --- Puzzle.cs ---
 using Domain;
 
 namespace Sudoku.Application.Puzzles;
 /// <summary>Puzzle generado: tablero con solo celdas dadas, su solución completa y su dificultad.</summary>
 public sealed record Puzzle(Board Board, Board Solution, Difficulty Difficulty);
 
+// --- ApplyHint.cs ---
+using Domain;
+using global::Sudoku.Application.Games;
+
+namespace Sudoku.Application.UseCases;
+/// <summary>
+/// Calcula una pista con <see cref = "GetHint"/> y la coloca con <see cref = "PlaceValue"/>.
+/// Es un único paso de deshacer y limpia las notas de los peers igual que una jugada normal.
+/// Devuelve la pista aplicada, o <c>null</c> si no queda ninguna celda vacía.
+/// </summary>
+/// <exception cref = "InvalidOperationException">Las celdas dadas no tienen solución (lo lanza <see cref = "GetHint"/>).</exception>
+public sealed class ApplyHint(GetHint getHint, PlaceValue placeValue)
+{
+    public Hint? Execute(GameSession session, Position? preferred = null);
+}
+
+// --- ClearCell.cs ---
+using Domain;
+using global::Sudoku.Application.Games;
+
+namespace Sudoku.Application.UseCases;
+/// <summary>Borra valor y notas de una celda del jugador. Devuelve <c>false</c> si es dada o ya estaba vacía.</summary>
+public sealed class ClearCell
+{
+    public bool Execute(GameSession session, Position position);
+}
+
 // --- GetHint.cs ---
 using Sudoku.Application.Ports;
 using Domain;
 
-namespace Application.UseCases;
+namespace Sudoku.Application.UseCases;
 /// <summary>
 /// Calcula una pista tomando el valor de la solución del puzzle. No modifica el tablero:
 /// aplicar la pista es responsabilidad del llamador (p. ej. el caso de uso PlaceValue).
@@ -219,9 +270,68 @@ public sealed class GetHint(ISolver solver)
 // --- Hint.cs ---
 using Domain;
 
-namespace Application.UseCases;
+namespace Sudoku.Application.UseCases;
 /// <summary>Pista: el valor correcto de una celda vacía.</summary>
 public readonly record struct Hint(Position Position, int Value);
+
+// --- PlaceValue.cs ---
+using Domain;
+using global::Sudoku.Application.Games;
+
+namespace Sudoku.Application.UseCases;
+/// <summary>
+/// Coloca un valor del jugador y quita ese candidato de las notas de los peers.
+/// Permite valores en conflicto: la UI los marca con <see cref = "SudokuRules.FindConflicts"/>.
+/// Devuelve <c>false</c> si la celda es dada o si no hay cambios.
+/// </summary>
+public sealed class PlaceValue
+{
+    public bool Execute(GameSession session, Position position, int value);
+}
+
+// --- Redo.cs ---
+using Sudoku.Application.Games;
+
+namespace Sudoku.Application.UseCases;
+public sealed class Redo
+{
+    public bool Execute(GameSession session);
+}
+
+// --- StartNewGame.cs ---
+using Domain;
+using Sudoku.Application.Games;
+using Sudoku.Application.Ports;
+
+namespace Sudoku.Application.UseCases;
+/// <summary>
+/// Genera un puzzle y abre una partida nueva. La generación es CPU-bound y síncrona:
+/// el presenter debe llamarla con <c>Task.Run</c> y pasar un <see cref = "CancellationToken"/>.
+/// </summary>
+public sealed class StartNewGame(IPuzzleGenerator generator)
+{
+    public GameSession Execute(Difficulty difficulty, CancellationToken ct = default);
+}
+
+// --- ToggleNote.cs ---
+using Domain;
+using Sudoku.Application.Games;
+
+namespace Sudoku.Application.UseCases;
+/// <summary>Activa o desactiva una nota. Solo aplica a celdas vacías (las dadas y las que tienen valor no admiten notas).</summary>
+public sealed class ToggleNote
+{
+    public bool Execute(GameSession session, Position position, int value);
+}
+
+// --- Undo.cs ---
+using Sudoku.Application.Games;
+
+namespace Sudoku.Application.UseCases;
+public sealed class Undo
+{
+    public bool Execute(GameSession session);
+}
 
 // --- PuzzleGenerator.cs ---
 using Domain;
