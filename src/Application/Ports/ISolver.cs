@@ -1,6 +1,6 @@
 using Domain;
 
-namespace Application.Ports;
+namespace Sudoku.Application.Ports;
 
 /// <summary>Puerto del solver. Lo implementa Infrastructure.</summary>
 public interface ISolver
