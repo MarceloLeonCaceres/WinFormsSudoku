@@ -147,10 +147,24 @@ public static class ValueGuard
     public static void EnsureValid(int value, string paramName);
 }
 
+// --- IPuzzleGenerator.cs ---
+using Domain;
+using Sudoku.Application.Puzzles;
+
+namespace Sudoku.Application.Ports;
+/// <summary>Puerto del generador. Lo implementa Infrastructure.</summary>
+public interface IPuzzleGenerator
+{
+    /// <summary>Genera un puzzle de solución única con la dificultad pedida.</summary>
+    /// <exception cref = "OperationCanceledException">Se canceló la generación.</exception>
+    /// <exception cref = "InvalidOperationException">No se logró un puzzle dentro del rango tras varios intentos.</exception>
+    Puzzle Generate(Difficulty difficulty, CancellationToken ct = default);
+}
+
 // --- ISolver.cs ---
 using Domain;
 
-namespace Application.Ports;
+namespace Sudoku.Application.Ports;
 /// <summary>Puerto del solver. Lo implementa Infrastructure.</summary>
 public interface ISolver
 {
@@ -166,8 +180,25 @@ public interface ISolver
     int CountSolutions(Board board, int limit);
 }
 
+// --- DifficultyProfile.cs ---
+using Domain;
+
+namespace Sudoku.Application.Puzzles;
+/// <summary>Política de dificultad: rango de celdas dadas. Única fuente de estos rangos.</summary>
+public sealed record DifficultyProfile(Difficulty Difficulty, int MinGivens, int MaxGivens)
+{
+    public static DifficultyProfile For(Difficulty difficulty);
+}
+
+// --- Puzzles.cs ---
+using Domain;
+
+namespace Sudoku.Application.Puzzles;
+/// <summary>Puzzle generado: tablero con solo celdas dadas, su solución completa y su dificultad.</summary>
+public sealed record Puzzle(Board Board, Board Solution, Difficulty Difficulty);
+
 // --- GetHint.cs ---
-using Application.Ports;
+using Sudoku.Application.Ports;
 using Domain;
 
 namespace Application.UseCases;
@@ -192,8 +223,24 @@ namespace Application.UseCases;
 /// <summary>Pista: el valor correcto de una celda vacía.</summary>
 public readonly record struct Hint(Position Position, int Value);
 
+// --- PuzzleGenerator.cs ---
+using Domain;
+using Sudoku.Application.Ports;
+using Sudoku.Application.Puzzles;
+
+namespace Infrastructure.Generation;
+/// <summary>
+/// Genera puzzles en dos pasos: (1) solución completa aleatoria, (2) quitar celdas en orden aleatorio
+/// conservando la unicidad. Pasa un <see cref = "Random"/> con semilla para resultados deterministas.
+/// <see cref = "Random"/> no es thread-safe: usa una instancia por hilo si pasas una propia.
+/// </summary>
+public sealed class PuzzleGenerator(ISolver solver, Random? random = null) : IPuzzleGenerator
+{
+    public Puzzle Generate(Difficulty difficulty, CancellationToken ct = default);
+}
+
 // --- BacktrackingSolver.cs ---
-using Application.Ports;
+using Sudoku.Application.Ports;
 using Domain;
 
 namespace Infrastructure.Solving;

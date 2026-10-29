@@ -79,16 +79,21 @@ Casos de uso (uno por clase, responsabilidad única):
   Puertos (interfaces):
 
 - `ISolver` tiene Solve y CountSolutions(limit)
-- `IPuzzleGenerator`
+- `IPuzzleGenerator` — `Generate(Difficulty, CancellationToken)` devuelve un `Puzzle` de solución única
 - `IGameRepository`
 - `IStatisticsRepository`
 - `ISettingsRepository`
 - `IClock` (para poder probar tiempos)
 
+Modelos y políticas:
+
+- `Puzzle` (Board, Solution, Difficulty) — resultado del generador
+- `DifficultyProfile` — rango de celdas dadas por dificultad (única fuente de estos rangos)
+
 ### Infrastructure
 
 - `BacktrackingSolver` (implementa `ISolver`)
-- `PuzzleGenerator` (implementa `IPuzzleGenerator`, usa el solver para garantizar solución única)
+- `PuzzleGenerator` (implementa `IPuzzleGenerator`; `Random` inyectable; usa el solver para garantizar solución única)
 - `JsonGameRepository`, `JsonStatisticsRepository`, `JsonSettingsRepository`
 - `SystemClock`
 - SolverState (internal)
@@ -160,3 +165,8 @@ Carpeta: `%AppData%\SudokuGame\`
 | 2026-10-29 | Estado mutable interno separado de Board                                           |
 | 2026-10-29 | GetHint resuelve solo con las celdas dadas y lanza excepción si no tienen solución |
 | 2026-10-29 | Completado Hito 2                                                                  |
+| 2026-10-29 | Dificultad por rango de celdas dadas (`DifficultyProfile` en Application); técnicas → hito 7 |
+| 2026-10-29 | `IPuzzleGenerator.Generate(Difficulty, CancellationToken)` devuelve `Puzzle(Board, Solution, Difficulty)` |
+| 2026-10-29 | Generador: solución sembrada con cajas diagonales + quitar celdas con unicidad (`CountSolutions(…, 2)`) |
+| 2026-10-29 | `Random` inyectable en `PuzzleGenerator`, sin puerto nuevo; sin simetría |
+| 2026-10-29 | Completado Hito 3 |
