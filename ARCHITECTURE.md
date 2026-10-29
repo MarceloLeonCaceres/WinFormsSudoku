@@ -77,6 +77,8 @@ Casos de uso (uno por clase, responsabilidad única):
 - `GetStatistics`, `ChangeTheme`
 - `PlaceValue` es quien limpia los candidatos de los peers
 - `ApplyHint` usa GetHint y PlaceValue
+- `SaveGame` 
+- `LoadGame` 
     
   Puertos (interfaces):
 
@@ -91,7 +93,11 @@ Modelos y políticas:
 
 - `Puzzle` (Board, Solution, Difficulty) — resultado del generador
 - `DifficultyProfile` — rango de celdas dadas por dificultad (única fuente de estos rangos)
-- `GameSession` — tablero actual más historial de snapshots; única pieza mutable de Application; no es thread-safe
+- `GameSession` — tablero, historial, y tiempo
+- `SavedGame`
+- `PlayTimer`
+- `CorruptSavedException`
+
 
 ### Infrastructure
 
@@ -99,7 +105,11 @@ Modelos y políticas:
 - `PuzzleGenerator` (implementa `IPuzzleGenerator`; `Random` inyectable; usa el solver para garantizar solución única)
 - `JsonGameRepository`, `JsonStatisticsRepository`, `JsonSettingsRepository`
 - `SystemClock`
-- SolverState (internal)
+- `SolverState` (internal)
+- `JsonFileStore` 
+- `AtomicFile` 
+- `IAppDataPaths/AppDataPaths` 
+- `GameDto / GameMapper` (internal)
 
 ### WinForms
 
@@ -124,12 +134,13 @@ Carpeta: `%AppData%\SudokuGame\`
 
 - `settings.json` — tema y preferencias
 - `statistics.json` — estadísticas agregadas
-- `games/current.json` — partida en curso (tablero, notas, historial, tiempo)
+- `dificultad, tablero (dadas, valores, notas) y tiempo; sin historial` — partida en curso (tablero, notas, historial, tiempo)
   Reglas:
 
 - El esquema lleva un campo `version` para poder migrar.
 - Las clases de dominio no se serializan directamente: se usan DTOs en Infrastructure.
 - Escritura atómica (archivo temporal + reemplazo) para no corromper datos.
+- Un guardado ilegible lanza CorruptSaveException y no se modifica
 
 ## 7. Convenciones
 
@@ -149,7 +160,7 @@ Carpeta: `%AppData%\SudokuGame\`
 2. Solver (completado)
 3. Generador y dificultades (completado)
 4. Casos de uso (colocar, notas, deshacer / rehacer, pistas) (completado)
-5. Persistencia JSON (partidas, estadísticas, tema)
+5. Persistencia JSON (partidas, estadísticas y tema pendientes)
 6. UI WinForms con temas
 7. Pulido y pruebas
 
@@ -180,3 +191,9 @@ Carpeta: `%AppData%\SudokuGame\`
 | 2026-10-29 | ApplyHint compone GetHint + PlaceValue; StartNewGame sin tiempo ni IClock |
 | 2026-10-29 | Namespaces de Application unificados en Sudoku.Application.*; Puzzles.cs → Puzzle.cs |
 | 2026-10-29 | Completado Hito 4 |
+| 2026-10-29 | GameSession lleva tiempo con IClock y PlayTimer; revierte “StartNewGame sin tiempo ni IClock” |
+| 2026-10-29 | current.json no guarda historial |
+| 2026-10-29 | Guardado dañado: CorruptSaveException, archivo intacto. |
+| 2026-10-29 | JsonFileStore/AtomicFile compartidos y IAppDataPaths como fuente de rutas. |
+| 2026-10-29 | Sesiones nuevas y reanudadas nacen en pausa. |
+| 2026-10-29 |  |

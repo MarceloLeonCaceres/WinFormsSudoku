@@ -147,9 +147,19 @@ public static class ValueGuard
     public static void EnsureValid(int value, string paramName);
 }
 
+// --- CorruptSaveException.cs ---
+namespace Sudoku.Application.Games;
+/// <summary>El archivo de partida existe pero no se puede interpretar (dañado, incompleto o de una versión desconocida).</summary>
+public sealed class CorruptSaveException : Exception
+{
+    public CorruptSaveException(string message) : base(message);
+    public CorruptSaveException(string message, Exception innerException) : base(message, innerException);
+}
+
 // --- GameSession.cs ---
 using Domain;
 using global::Sudoku.Application.Puzzles;
+using Sudoku.Application.Ports;
 
 namespace Sudoku.Application.Games;
 /// <summary>
@@ -159,16 +169,73 @@ namespace Sudoku.Application.Games;
 /// </summary>
 public sealed class GameSession
 {
+    public GameSession(Puzzle puzzle, IClock clock) : this(puzzle.Board, puzzle.Difficulty, TimeSpan.Zero, clock);
     public GameSession(Puzzle puzzle);
+    /// <summary>Reanuda una partida guardada: en pausa y con el historial vacío.</summary>
+    public static GameSession Restore(SavedGame saved, IClock clock);
     public Board Board { get; private set; }
     public Difficulty Difficulty { get; }
     public bool CanUndo => _undo.Count > 0;
     public bool CanRedo => _redo.Count > 0;
+    public TimeSpan ElapsedTime => _timer.Elapsed;
+    public bool IsRunning => _timer.IsRunning;
 
+    public void Start();
+    public void Pause();
     /// <summary>Adopta <paramref name = "next"/> como tablero actual. Devuelve <c>false</c> si no cambia nada.</summary>
     public bool Apply(Board next);
     public bool Undo();
     public bool Redo();
+}
+
+// --- PlayTimer.cs ---
+using global::Sudoku.Application.Ports;
+
+namespace Sudoku.Application.Games;
+/// <summary>
+/// Cronómetro de partida con pausa. Acumula el tiempo de los tramos anteriores y suma el tramo en curso.
+/// Separado de <see cref = "GameSession"/> para que cada clase tenga una sola razón de cambio.
+/// </summary>
+public sealed class PlayTimer
+{
+    public PlayTimer(IClock clock, TimeSpan accumulated = default);
+    public bool IsRunning => _startedAt is not null;
+    public TimeSpan Elapsed => _accumulated + CurrentLeg();
+
+    /// <summary>Arranca o reanuda. Si ya está en marcha no hace nada.</summary>
+    public void Start();
+    /// <summary>Detiene el conteo conservando lo acumulado. Si ya está en pausa no hace nada.</summary>
+    public void Pause();
+}
+
+// --- SavedGame.cs ---
+using Domain;
+
+namespace Sudoku.Application.Games;
+/// <summary>Estado persistible de una partida: tablero (con dadas, valores y notas), dificultad y tiempo jugado. No incluye historial.</summary>
+public sealed record SavedGame(Board Board, Difficulty Difficulty, TimeSpan Elapsed);
+
+// --- IClock.cs ---
+namespace Sudoku.Application.Ports;
+/// <summary>Puerto del reloj. Permite probar tiempos sin depender de la hora real.</summary>
+public interface IClock
+{
+    DateTimeOffset UtcNow { get; }
+}
+
+// --- IGameRepository.cs ---
+using global::Sudoku.Application.Games;
+
+namespace Sudoku.Application.Ports;
+/// <summary>Puerto de persistencia de la partida en curso. Lo implementa Infrastructure.</summary>
+public interface IGameRepository
+{
+    void Save(SavedGame game);
+    /// <summary>Devuelve la partida guardada, o <c>null</c> si no hay ninguna.</summary>
+    /// <exception cref = "CorruptSaveException">El guardado existe pero está dañado o su versión no se reconoce.</exception>
+    SavedGame? Load();
+    /// <summary>Elimina la partida guardada. No falla si no existe.</summary>
+    void Delete();
 }
 
 // --- IPuzzleGenerator.cs ---
@@ -274,6 +341,20 @@ namespace Sudoku.Application.UseCases;
 /// <summary>Pista: el valor correcto de una celda vacía.</summary>
 public readonly record struct Hint(Position Position, int Value);
 
+// --- LoadGame.cs ---
+using global::Sudoku.Application.Games;
+using global::Sudoku.Application.Ports;
+
+namespace Sudoku.Application.UseCases;
+/// <summary>
+/// Reanuda la partida guardada. Devuelve <c>null</c> si no hay ninguna; la sesión vuelve en pausa y con el historial vacío.
+/// </summary>
+/// <exception cref = "CorruptSaveException">El guardado está dañado o es de una versión desconocida.</exception>
+public sealed class LoadGame(IGameRepository repository, IClock clock)
+{
+    public GameSession? Execute();
+}
+
 // --- PlaceValue.cs ---
 using Domain;
 using global::Sudoku.Application.Games;
@@ -298,6 +379,17 @@ public sealed class Redo
     public bool Execute(GameSession session);
 }
 
+// --- SaveGame.cs ---
+using global::Sudoku.Application.Games;
+using global::Sudoku.Application.Ports;
+
+namespace Sudoku.Application.UseCases;
+/// <summary>Guarda la partida en curso (tablero, dificultad y tiempo jugado). El historial de deshacer no se guarda.</summary>
+public sealed class SaveGame(IGameRepository repository)
+{
+    public void Execute(GameSession session);
+}
+
 // --- StartNewGame.cs ---
 using Domain;
 using Sudoku.Application.Games;
@@ -308,7 +400,7 @@ namespace Sudoku.Application.UseCases;
 /// Genera un puzzle y abre una partida nueva. La generación es CPU-bound y síncrona:
 /// el presenter debe llamarla con <c>Task.Run</c> y pasar un <see cref = "CancellationToken"/>.
 /// </summary>
-public sealed class StartNewGame(IPuzzleGenerator generator)
+public sealed class StartNewGame(IPuzzleGenerator generator, IClock clock)
 {
     public GameSession Execute(Difficulty difficulty, CancellationToken ct = default);
 }
@@ -349,6 +441,71 @@ public sealed class PuzzleGenerator(ISolver solver, Random? random = null) : IPu
     public Puzzle Generate(Difficulty difficulty, CancellationToken ct = default);
 }
 
+// --- AppDataPaths.cs ---
+namespace Infrastructure.Persistence;
+/// <summary>Rutas bajo una carpeta raíz; por defecto <c>%AppData%\SudokuGame\</c>.</summary>
+public sealed class AppDataPaths(string root) : IAppDataPaths
+{
+    public static AppDataPaths ForCurrentUser();
+    public string CurrentGamePath => Path.Combine(root, "games", "current.json");
+}
+
+// --- AtomicFile.cs ---
+using System.Text;
+
+namespace Infrastructure.Persistence;
+/// <summary>Escritura atómica: se escribe un temporal en la misma carpeta y luego se reemplaza el destino.</summary>
+public static class AtomicFile
+{
+    public static void WriteAllText(string path, string content);
+}
+
+// --- IAppDataPaths.cs ---
+namespace Infrastructure.Persistence;
+/// <summary>Única fuente de las rutas de archivos de la app. Permite usar una carpeta temporal en las pruebas.</summary>
+public interface IAppDataPaths
+{
+    /// <summary>Ruta de <c>games/current.json</c>.</summary>
+    string CurrentGamePath { get; }
+}
+
+// --- JsonFileStore.cs ---
+using System.Text.Json;
+
+namespace Infrastructure.Persistence;
+/// <summary>
+/// Lectura y escritura de un objeto JSON en un archivo, con opciones compartidas y escritura atómica.
+/// La reutilizan los tres repositorios (partida, estadísticas, ajustes).
+/// </summary>
+public static class JsonFileStore
+{
+    /// <summary>Devuelve <c>null</c> solo si el archivo no existe.</summary>
+    /// <exception cref = "JsonException">El contenido no es un JSON válido del tipo esperado (incluye vacío y <c>null</c>).</exception>
+    public static T? Read<T>(string path)
+        where T : class;
+    public static void Write<T>(string path, T value);
+    /// <summary>Elimina el archivo. No falla si no existe.</summary>
+    /// <summary>Elimina el archivo. No falla si el archivo o su carpeta no existen.</summary>
+    public static void Delete(string path);
+}
+
+// --- JsonGameRepository.cs ---
+using System.Text.Json;
+using Sudoku.Application.Games;
+using Sudoku.Application.Ports;
+
+namespace Infrastructure.Persistence;
+/// <summary>
+/// Guarda la partida en curso en <c>games/current.json</c>. Un archivo dañado nunca se borra ni se renombra:
+/// <see cref = "Load"/> lanza <see cref = "CorruptSaveException"/> y el presenter decide qué hacer.
+/// </summary>
+public sealed class JsonGameRepository(IAppDataPaths paths) : IGameRepository
+{
+    public void Save(SavedGame game);
+    public SavedGame? Load();
+    public void Delete();
+}
+
 // --- BacktrackingSolver.cs ---
 using Sudoku.Application.Ports;
 using Domain;
@@ -359,5 +516,14 @@ public sealed class BacktrackingSolver : ISolver
 {
     public Board? Solve(Board board);
     public int CountSolutions(Board board, int limit);
+}
+
+// --- SystemClock.cs ---
+using Sudoku.Application.Ports;
+
+namespace Infrastructure.Time;
+public sealed class SystemClock : IClock
+{
+    public DateTimeOffset UtcNow => DateTimeOffset.UtcNow;
 }
 
