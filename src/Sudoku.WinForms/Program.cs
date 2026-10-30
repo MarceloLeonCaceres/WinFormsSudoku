@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Sudoku.WinForms.Views;
 
 namespace Sudoku.WinForms;
 
@@ -13,6 +14,6 @@ internal static class Program
         ApplicationConfiguration.Initialize();
 
         using var provider = CompositionRoot.Build();
-        System.Windows.Forms.Application.Run(provider.GetRequiredService<ThemePreviewForm>());
+        System.Windows.Forms.Application.Run(provider.GetRequiredService<MainForm>());
     }
 }

@@ -8,6 +8,7 @@ using Sudoku.Application.Ports;
 using Sudoku.Application.Settings;
 using Sudoku.Application.UseCases;
 using Sudoku.WinForms.Theming;
+using Sudoku.WinForms.Views;
 
 namespace Sudoku.WinForms;
 
@@ -64,7 +65,7 @@ internal static class CompositionRoot
 
     private static void AddForms(IServiceCollection services)
     {
-        services.AddTransient<ThemePreviewForm>(); // temporal: se reemplaza por MainForm en la Parte 3
+        services.AddTransient<MainForm>(); 
     }
 
     private static ThemeKind ResolveInitialTheme(GetSettings getSettings)

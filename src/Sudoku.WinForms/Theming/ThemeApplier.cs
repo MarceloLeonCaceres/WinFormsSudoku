@@ -1,7 +1,4 @@
-﻿using System.Drawing;
-using System.Windows.Forms;
-
-namespace Sudoku.WinForms.Theming;
+﻿namespace Sudoku.WinForms.Theming;
 
 /// <summary>
 /// Pinta los controles estándar (formulario, paneles, etiquetas, botones) con el tema, de forma recursiva.
@@ -33,11 +30,22 @@ public static class ThemeApplier
                 button.BackColor = theme.Control;
                 button.ForeColor = theme.ControlText;
                 break;
+            case CheckBox checkBox:
+                checkBox.FlatStyle = FlatStyle.Flat;
+                checkBox.FlatAppearance.BorderColor = theme.ControlBorder;
+                checkBox.BackColor = theme.Control;
+                checkBox.ForeColor = theme.ControlText;
+                break;
+            case ComboBox comboBox:
+                comboBox.FlatStyle = FlatStyle.Flat;
+                comboBox.BackColor = theme.Control;
+                comboBox.ForeColor = theme.ControlText;
+                break;
             case Label:
                 control.BackColor = Color.Transparent;
                 control.ForeColor = theme.Text;
                 break;
-            case Panel: // incluye FlowLayoutPanel y TableLayoutPanel
+            case Panel:
                 control.BackColor = theme.Surface;
                 control.ForeColor = theme.Text;
                 break;
