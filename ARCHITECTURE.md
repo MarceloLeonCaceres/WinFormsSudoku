@@ -37,7 +37,7 @@ Sudoku.sln
 └─ tests/
    ├─ Domain.Tests.Unit
    ├─ Application.Tests.Unit
-   └─ Infrastructure.Tests.Unit
+   ├─ Infrastructure.Tests.Unit
    └─ Sudoku.WinForms.Tests
 ```
 
@@ -74,7 +74,7 @@ Casos de uso (uno por clase, responsabilidad única):
 - `StartNewGame` (genera el puzzle y devuelve una GameSession), `PlaceValue`, `ClearCell`, `ToggleNote`
 - `Undo`, `Redo`
 - `GetHint`,
-- `SaveGame`, `LoadGame`
+- `Hint`
 - `GetStatistics`, `ChangeTheme`
 - `PlaceValue` es quien limpia los candidatos de los peers
 - `ApplyHint` usa GetHint y PlaceValue
@@ -111,7 +111,7 @@ Modelos y políticas:
 
 - `BacktrackingSolver` (implementa `ISolver`)
 - `PuzzleGenerator` (implementa `IPuzzleGenerator`; `Random` inyectable; usa el solver para garantizar solución única)
-- `JsonGameRepository`, `JsonStatisticsRepository`, `JsonSettingsRepository`
+- `JsonGameRepository`
 - `SystemClock`
 - `SolverState` (internal)
 - `JsonFileStore`
@@ -127,7 +127,6 @@ Modelos y políticas:
 - `StatisticsDto`, `StatisticsMapper` (internal)
 - `SettingsDto`, `SettingsMapper` (internal)
 
-### WinForms
 
 ### WinForms
 
@@ -189,7 +188,7 @@ Carpeta: `%AppData%\SudokuGame\`
 - `settings.json` — tema y preferencias
 - `statistics.json` — estadísticas agregadas
 - `dificultad, tablero (dadas, valores, notas) y tiempo; sin historial` 
-— partida en curso (tablero, notas, tiempo; sin historial)
+- `games/current.json` — partida en curso (tablero, notas, tiempo; sin historial)
   
   Reglas:
 
@@ -276,3 +275,8 @@ Carpeta: `%AppData%\SudokuGame\`
 | 2026-10-30 | La navegación con flechas se detiene en los bordes; un clic fuera del tablero conserva la selección |
 | 2026-10-30 | BoardControl emite ValueEntered independientemente de NotesMode; el Presenter decide entre colocar valor y alternar nota |
 | 2026-10-30 | Las propiedades de estado del control no se serializan en el diseñador WinForms |
+| 2026-10-30 | SelectedPosition tiene setter público y dispara SelectionChanged al asignarlo. |
+| 2026-10-30 | IMainView y MainForm existen con su contrato actual. |
+| 2026-10-30 | MainForm recibe IThemeService y usa Choice<T> para los combos de dificultad y tema. |
+| 2026-10-30 | Carpetas y namespaces Views/ y Controls/BoardControl/. |
+| 2026-10-30 | SelectionChangedEventArgs y ValueEnteredEventArgs son clases propias. |
