@@ -191,12 +191,10 @@ public sealed class MainForm : Form, IMainView
             _difficultyComboBox.DisplayMember = nameof(Choice<Difficulty>.Text);
             _difficultyComboBox.DataSource = difficulties;
 
-            // Inspeccionar aquí con un breakpoint
             var count = _difficultyComboBox.Items.Count;
 
             _difficultyComboBox.SelectedIndex = 0;
 
-            // El resto de la configuración...
         }
         finally
         {
