@@ -7,4 +7,6 @@ public sealed class AppDataPaths(string root) : IAppDataPaths
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "SudokuGame"));
 
     public string CurrentGamePath => Path.Combine(root, "games", "current.json");
+    public string StatisticsPath => Path.Combine(root, "statistics.json");
+    public string SettingsPath => Path.Combine(root, "settings.json");
 }

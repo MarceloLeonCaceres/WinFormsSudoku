@@ -5,4 +5,10 @@ public interface IAppDataPaths
 {
     /// <summary>Ruta de <c>games/current.json</c>.</summary>
     string CurrentGamePath { get; }
+
+    /// <summary>Ruta de <c>statistics.json</c>.</summary>
+    string StatisticsPath { get; }
+
+    /// <summary>Ruta de <c>settings.json</c>.</summary>
+    string SettingsPath { get; }
 }
