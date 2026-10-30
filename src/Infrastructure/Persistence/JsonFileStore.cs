@@ -24,7 +24,6 @@ public static class JsonFileStore
     public static void Write<T>(string path, T value)
         => AtomicFile.WriteAllText(path, JsonSerializer.Serialize(value, Options));
 
-    /// <summary>Elimina el archivo. No falla si no existe.</summary>
     /// <summary>Elimina el archivo. No falla si el archivo o su carpeta no existen.</summary>
     public static void Delete(string path)
     {
