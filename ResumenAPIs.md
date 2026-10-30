@@ -762,7 +762,6 @@ public static class JsonFileStore
     public static T? Read<T>(string path)
         where T : class;
     public static void Write<T>(string path, T value);
-    /// <summary>Elimina el archivo. No falla si no existe.</summary>
     /// <summary>Elimina el archivo. No falla si el archivo o su carpeta no existen.</summary>
     public static void Delete(string path);
 }
@@ -842,6 +841,216 @@ namespace Infrastructure.Time;
 public sealed class SystemClock : IClock
 {
     public DateTimeOffset UtcNow => DateTimeOffset.UtcNow;
+}
+```
+
+### `Sudoku.WinForms/Theming/IThemeService.cs`
+```csharp
+using Sudoku.Application.Settings;
+
+namespace Sudoku.WinForms.Theming;
+/// <summary>Expone el tema actual y avisa cuando cambia. Úsalo solo desde el hilo de UI.</summary>
+public interface IThemeService
+{
+    Theme Current { get; }
+
+    /// <summary>Se dispara después de cambiar <see cref = "Current"/>.</summary>
+    event EventHandler? ThemeChanged;
+    /// <summary>
+    /// Guarda y aplica el tema. Devuelve <c>false</c> si ya era ese tema.
+    /// Si guardar falla (p. ej. <see cref = "Sudoku.Application.Games.CorruptSaveException"/>), la excepción
+    /// se propaga y el tema no cambia: el presenter decide qué mostrar.
+    /// </summary>
+    bool SetTheme(ThemeKind kind);
+}
+```
+
+### `Sudoku.WinForms/Theming/Palettes.cs`
+```csharp
+using Sudoku.Application.Settings;
+
+namespace Sudoku.WinForms.Theming;
+/// <summary>Única fuente de las paletas y de la correspondencia ThemeKind → Theme.</summary>
+public static class Palettes
+{
+    public static Theme Light { get; }
+    public static Theme Dark { get; }
+
+    public static Theme For(ThemeKind kind);
+}
+```
+
+### `Sudoku.WinForms/Theming/Theme.cs`
+```csharp
+using Sudoku.Application.Settings;
+
+namespace Sudoku.WinForms.Theming;
+/// <summary>Paleta inmutable con nombres semánticos. Los controles leen de aquí y nunca usan colores fijos.</summary>
+public sealed record Theme
+{
+    public required ThemeKind Kind { get; init; }
+    // Ventana y barra lateral
+    public required Color Background { get; init; }
+    public required Color Surface { get; init; }
+    public required Color Text { get; init; }
+    public required Color MutedText { get; init; }
+    public required Color Accent { get; init; }
+    // Botones
+    public required Color Control { get; init; }
+    public required Color ControlText { get; init; }
+    public required Color ControlBorder { get; init; }
+    // Tablero
+    public required Color BoardBackground { get; init; }
+    public required Color BoardLine { get; init; }
+    public required Color BoxLine { get; init; }
+    public required Color GivenText { get; init; }
+    public required Color UserText { get; init; }
+    public required Color SelectedCell { get; init; }
+    public required Color RelatedCell { get; init; }
+    public required Color MatchingValue { get; init; }
+    public required Color ConflictText { get; init; }
+    public required Color NoteText { get; init; }
+}
+```
+
+### `Sudoku.WinForms/Theming/ThemeApplier.cs`
+```csharp
+using System.Drawing;
+using System.Windows.Forms;
+
+namespace Sudoku.WinForms.Theming;
+/// <summary>
+/// Pinta los controles estándar (formulario, paneles, etiquetas, botones) con el tema, de forma recursiva.
+/// Los controles propios (p. ej. BoardControl) leen el tema directamente y no pasan por aquí.
+/// </summary>
+public static class ThemeApplier
+{
+    public static void Apply(Theme theme, Control root);
+}
+```
+
+### `Sudoku.WinForms/Theming/ThemeService.cs`
+```csharp
+using Sudoku.Application.Settings;
+using Sudoku.Application.UseCases;
+
+namespace Sudoku.WinForms.Theming;
+public sealed class ThemeService : IThemeService
+{
+    public ThemeService(ChangeTheme changeTheme, ThemeKind initial);
+    public Theme Current { get; private set; }
+
+    public event EventHandler? ThemeChanged;
+    public bool SetTheme(ThemeKind kind);
+}
+```
+
+### `Sudoku.WinForms/Controls/BoardControl/BoardControl.cs`
+```csharp
+using Domain;
+using Sudoku.WinForms.Theming;
+using System.ComponentModel;
+
+namespace Sudoku.WinForms.Controls.BoardControl;
+public sealed class BoardControl : Control
+{
+    public BoardControl(IThemeService themeService);
+    public event EventHandler<SelectionChangedEventArgs>? SelectionChanged;
+    public event EventHandler<ValueEnteredEventArgs>? ValueEntered;
+    public event EventHandler? ClearRequested;
+    /// <summary>
+    /// Celda seleccionada. Puede ser null cuando no hay selección.
+    /// </summary>
+    [Browsable(false)]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public Position? SelectedPosition
+    {
+        get => _selectedPosition;
+        set
+        {
+            if (_selectedPosition == value)
+                return;
+            _selectedPosition = value;
+            Invalidate();
+            // Solo notificamos cuando se selecciona una celda.
+            if (value is { } position)
+            {
+                SelectionChanged?.Invoke(this, new SelectionChangedEventArgs(position));
+            }
+        }
+    }
+
+    /// <summary>
+    /// Indica si el jugador está utilizando el modo notas.
+    /// La decisión sobre qué operación ejecutar corresponde al Presenter.
+    /// </summary>
+    [Browsable(false)]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public bool NotesMode
+    {
+        get => _notesMode;
+        set
+        {
+            if (_notesMode == value)
+                return;
+            _notesMode = value;
+            Invalidate();
+        }
+    }
+
+    /// <summary>
+    /// Actualiza el tablero y solicita un nuevo dibujo.
+    /// </summary>
+    public void SetBoard(Board board);
+}
+```
+
+### `Sudoku.WinForms/Controls/BoardControl/BoardGeometry.cs`
+```csharp
+using Domain;
+
+namespace Sudoku.WinForms.Controls.BoardControl;
+/// <summary>
+/// Geometría del tablero. No depende de controles WinForms ni de GDI+.
+/// </summary>
+public readonly struct BoardGeometry
+{
+    public RectangleF Bounds { get; }
+    public float CellSize { get; }
+
+    /// <summary>
+    /// Calcula un tablero cuadrado centrado dentro del espacio disponible.
+    /// </summary>
+    public static BoardGeometry Create(SizeF availableSize);
+    /// <summary>
+    /// Devuelve el rectángulo correspondiente a una celda.
+    /// </summary>
+    public RectangleF GetCellBounds(Position position);
+    /// <summary>
+    /// Devuelve la posición de la celda que contiene el punto,
+    /// o null si el punto está fuera del tablero.
+    /// </summary>
+    public Position? HitTest(PointF point);
+}
+```
+
+### `Sudoku.WinForms/Controls/BoardControl/SelectionChangedEventArgs.cs`
+```csharp
+using Domain;
+
+namespace Sudoku.WinForms.Controls.BoardControl;
+public sealed class SelectionChangedEventArgs(Position position) : EventArgs
+{
+    public Position Position { get; }
+}
+```
+
+### `Sudoku.WinForms/Controls/BoardControl/ValueEnteredEventArgs.cs`
+```csharp
+namespace Sudoku.WinForms.Controls.BoardControl;
+public sealed class ValueEnteredEventArgs(int value) : EventArgs
+{
+    public int Value { get; }
 }
 ```
 
