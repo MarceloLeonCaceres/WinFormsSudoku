@@ -79,6 +79,7 @@ Casos de uso (uno por clase, responsabilidad única):
 - `ApplyHint` usa GetHint y PlaceValue
 - `SaveGame` 
 - `LoadGame` 
+- `RecordGameStarted`, `RecordGameFinished` , `GetSettings`  
     
   Puertos (interfaces):
 
@@ -97,6 +98,12 @@ Modelos y políticas:
 - `SavedGame`
 - `PlayTimer`
 - `CorruptSavedException`
+- `GameStatistics`
+- `DifficultyStatistics`
+- `GameRecord`
+- `GameOutcome`
+- `AppSettings`
+- `ThemeKind` - Theme (paleta) es de WinForms.
 
 
 ### Infrastructure
@@ -110,6 +117,14 @@ Modelos y políticas:
 - `AtomicFile` 
 - `IAppDataPaths/AppDataPaths` 
 - `GameDto / GameMapper` (internal)
+- `JsonStatisticsRepository` 
+- `JsonSettingsRepository` 
+- `SchemaVersion` 
+- `EnumParser` 
+- `CorruptSaveGuard` 
+- `DifficultyStatisticsDto`, `GameRecordDto` (internal)
+- `StatisticsDto`, `StatisticsMapper` (internal)
+- `SettingsDto`, `SettingsMapper` (internal)
 
 ### WinForms
 
@@ -141,6 +156,7 @@ Carpeta: `%AppData%\SudokuGame\`
 - Las clases de dominio no se serializan directamente: se usan DTOs en Infrastructure.
 - Escritura atómica (archivo temporal + reemplazo) para no corromper datos.
 - Un guardado ilegible lanza CorruptSaveException y no se modifica
+- statistics.json y settings.json llevan version y se leen/escriben con JsonFileStore. Un archivo dañado lanza CorruptSaveException.
 
 ## 7. Convenciones
 
@@ -160,7 +176,7 @@ Carpeta: `%AppData%\SudokuGame\`
 2. Solver (completado)
 3. Generador y dificultades (completado)
 4. Casos de uso (colocar, notas, deshacer / rehacer, pistas) (completado)
-5. Persistencia JSON (partidas, estadísticas y tema pendientes)
+5. Persistencia JSON (completado)
 6. UI WinForms con temas
 7. Pulido y pruebas
 
@@ -196,4 +212,9 @@ Carpeta: `%AppData%\SudokuGame\`
 | 2026-10-29 | Guardado dañado: CorruptSaveException, archivo intacto. |
 | 2026-10-29 | JsonFileStore/AtomicFile compartidos y IAppDataPaths como fuente de rutas. |
 | 2026-10-29 | Sesiones nuevas y reanudadas nacen en pausa. |
-| 2026-10-29 |  |
+| 2026-10-29 | Estadísticas: agregados por dificultad + últimas 20 partidas |
+| 2026-10-29 | Partida cuenta al empezar; abandonar = perdida |
+| 2026-10-29 | Tema: solo Claro/Oscuro (ThemeKind), defecto Oscuro |
+| 2026-10-29 | Victoria solo se registra con tablero resuelto |
+| 2026-10-29 | Ajustes y estadísticas dañados lanzan CorruptSaveException |
+| 2026-10-29 | Completado Hito 5 |
