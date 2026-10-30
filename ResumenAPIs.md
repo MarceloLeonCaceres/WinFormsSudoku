@@ -1,4 +1,5 @@
-// --- Board.cs ---
+### `Domain/Board.cs`
+```csharp
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -24,8 +25,10 @@ public sealed class Board : IEquatable<Board>
     public override bool Equals(object? obj);
     public override int GetHashCode();
 }
+```
 
-// --- CandidateSet.cs ---
+### `Domain/CandidateSet.cs`
+```csharp
 using System.Collections;
 using System.Numerics;
 
@@ -53,8 +56,10 @@ public readonly struct CandidateSet : IEquatable<CandidateSet>, IEnumerable<int>
     public static bool operator ==(CandidateSet left, CandidateSet right);
     public static bool operator !=(CandidateSet left, CandidateSet right);
 }
+```
 
-// --- Cell.cs ---
+### `Domain/Cell.cs`
+```csharp
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -79,8 +84,26 @@ public readonly record struct Cell
     /// <summary>Borra valor y notas de una celda del jugador.</summary>
     public Cell Cleared();
 }
+```
 
-// --- Position.cs ---
+### `Domain/Difficulty.cs`
+```csharp
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace Domain;
+public enum Difficulty
+{
+    Easy,
+    Medium,
+    Hard,
+    Expert
+}
+```
+
+### `Domain/Position.cs`
+```csharp
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -100,8 +123,10 @@ public readonly record struct Position
 
     public static Position FromIndex(int index);
 }
+```
 
-// --- SudokuConstants.cs ---
+### `Domain/SudokuConstants.cs`
+```csharp
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -116,8 +141,10 @@ public static class SudokuConstants
     public const int MinValue = 1;
     public const int MaxValue = Size;
 }
+```
 
-// --- SudokuRules.cs ---
+### `Domain/SudokuRules.cs`
+```csharp
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -135,8 +162,10 @@ public static class SudokuRules
     public static bool IsComplete(Board board);
     public static bool IsSolved(Board board);
 }
+```
 
-// --- ValueGuard.cs ---
+### `Domain/ValueGuard.cs`
+```csharp
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -146,8 +175,10 @@ public static class ValueGuard
 {
     public static void EnsureValid(int value, string paramName);
 }
+```
 
-// --- CorruptSaveException.cs ---
+### `Application/Games/CorruptSaveException.cs`
+```csharp
 namespace Sudoku.Application.Games;
 /// <summary>El archivo de partida existe pero no se puede interpretar (dañado, incompleto o de una versión desconocida).</summary>
 public sealed class CorruptSaveException : Exception
@@ -155,8 +186,10 @@ public sealed class CorruptSaveException : Exception
     public CorruptSaveException(string message) : base(message);
     public CorruptSaveException(string message, Exception innerException) : base(message, innerException);
 }
+```
 
-// --- GameSession.cs ---
+### `Application/Games/GameSession.cs`
+```csharp
 using Domain;
 using global::Sudoku.Application.Puzzles;
 using Sudoku.Application.Ports;
@@ -187,8 +220,10 @@ public sealed class GameSession
     public bool Undo();
     public bool Redo();
 }
+```
 
-// --- PlayTimer.cs ---
+### `Application/Games/PlayTimer.cs`
+```csharp
 using global::Sudoku.Application.Ports;
 
 namespace Sudoku.Application.Games;
@@ -207,23 +242,29 @@ public sealed class PlayTimer
     /// <summary>Detiene el conteo conservando lo acumulado. Si ya está en pausa no hace nada.</summary>
     public void Pause();
 }
+```
 
-// --- SavedGame.cs ---
+### `Application/Games/SavedGame.cs`
+```csharp
 using Domain;
 
 namespace Sudoku.Application.Games;
 /// <summary>Estado persistible de una partida: tablero (con dadas, valores y notas), dificultad y tiempo jugado. No incluye historial.</summary>
 public sealed record SavedGame(Board Board, Difficulty Difficulty, TimeSpan Elapsed);
+```
 
-// --- IClock.cs ---
+### `Application/Ports/IClock.cs`
+```csharp
 namespace Sudoku.Application.Ports;
 /// <summary>Puerto del reloj. Permite probar tiempos sin depender de la hora real.</summary>
 public interface IClock
 {
     DateTimeOffset UtcNow { get; }
 }
+```
 
-// --- IGameRepository.cs ---
+### `Application/Ports/IGameRepository.cs`
+```csharp
 using global::Sudoku.Application.Games;
 
 namespace Sudoku.Application.Ports;
@@ -237,8 +278,10 @@ public interface IGameRepository
     /// <summary>Elimina la partida guardada. No falla si no existe.</summary>
     void Delete();
 }
+```
 
-// --- IPuzzleGenerator.cs ---
+### `Application/Ports/IPuzzleGenerator.cs`
+```csharp
 using Domain;
 using Sudoku.Application.Puzzles;
 
@@ -251,8 +294,26 @@ public interface IPuzzleGenerator
     /// <exception cref = "InvalidOperationException">No se logró un puzzle dentro del rango tras varios intentos.</exception>
     Puzzle Generate(Difficulty difficulty, CancellationToken ct = default);
 }
+```
 
-// --- ISolver.cs ---
+### `Application/Ports/ISettingsRepository.cs`
+```csharp
+using Sudoku.Application.Games;
+using Sudoku.Application.Settings;
+
+namespace Sudoku.Application.Ports;
+/// <summary>Puerto de persistencia de las preferencias. Lo implementa Infrastructure.</summary>
+public interface ISettingsRepository
+{
+    /// <summary>Devuelve los ajustes guardados, o <see cref = "AppSettings.Default"/> si no hay archivo.</summary>
+    /// <exception cref = "CorruptSaveException">El archivo existe pero está dañado o su versión no se reconoce.</exception>
+    AppSettings Load();
+    void Save(AppSettings settings);
+}
+```
+
+### `Application/Ports/ISolver.cs`
+```csharp
 using Domain;
 
 namespace Sudoku.Application.Ports;
@@ -270,8 +331,26 @@ public interface ISolver
     /// </summary>
     int CountSolutions(Board board, int limit);
 }
+```
 
-// --- DifficultyProfile.cs ---
+### `Application/Ports/IStatisticsRepository.cs`
+```csharp
+using Sudoku.Application.Games;
+using Sudoku.Application.Statistics;
+
+namespace Sudoku.Application.Ports;
+/// <summary>Puerto de persistencia de las estadísticas. Lo implementa Infrastructure.</summary>
+public interface IStatisticsRepository
+{
+    /// <summary>Devuelve las estadísticas guardadas, o <see cref = "GameStatistics.Empty"/> si no hay archivo.</summary>
+    /// <exception cref = "CorruptSaveException">El archivo existe pero está dañado o su versión no se reconoce.</exception>
+    GameStatistics Load();
+    void Save(GameStatistics statistics);
+}
+```
+
+### `Application/Puzzles/DifficultyProfile.cs`
+```csharp
 using Domain;
 
 namespace Sudoku.Application.Puzzles;
@@ -280,15 +359,102 @@ public sealed record DifficultyProfile(Difficulty Difficulty, int MinGivens, int
 {
     public static DifficultyProfile For(Difficulty difficulty);
 }
+```
 
-// --- Puzzle.cs ---
+### `Application/Puzzles/Puzzle.cs`
+```csharp
 using Domain;
 
 namespace Sudoku.Application.Puzzles;
 /// <summary>Puzzle generado: tablero con solo celdas dadas, su solución completa y su dificultad.</summary>
 public sealed record Puzzle(Board Board, Board Solution, Difficulty Difficulty);
+```
 
-// --- ApplyHint.cs ---
+### `Application/Settings/AppSettings.cs`
+```csharp
+namespace Sudoku.Application.Settings;
+/// <summary>Preferencias persistidas de la aplicación.</summary>
+public sealed record AppSettings(ThemeKind Theme)
+{
+    public static AppSettings Default { get; }
+}
+```
+
+### `Application/Settings/ThemeKind.cs`
+```csharp
+namespace Sudoku.Application.Settings;
+/// <summary>Tema elegido por el jugador. La paleta concreta vive en WinForms.</summary>
+public enum ThemeKind
+{
+    Light,
+    Dark
+}
+```
+
+### `Application/Statistics/DifficultyStatistics.cs`
+```csharp
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace Sudoku.Application.Statistics;
+/// <summary>
+/// Agregados de una dificultad. <see cref = "Started"/> cuenta al empezar; las abandonadas terminan en <see cref = "Lost"/>.
+/// Los tiempos (<see cref = "BestTime"/>, <see cref = "TotalWonTime"/>) solo consideran partidas ganadas.
+/// </summary>
+public sealed record DifficultyStatistics(int Started, int Won, int Lost, TimeSpan? BestTime, TimeSpan TotalWonTime)
+{
+    public static DifficultyStatistics Empty { get; }
+    public TimeSpan? AverageWonTime => Won == 0 ? null : TotalWonTime / Won;
+
+    public DifficultyStatistics WithStarted();
+    public DifficultyStatistics WithFinished(GameOutcome outcome, TimeSpan elapsed);
+}
+```
+
+### `Application/Statistics/GameOutcome.cs`
+```csharp
+namespace Sudoku.Application.Statistics;
+/// <summary>Resultado de una partida terminada. Abandonar una partida cuenta como <see cref = "Lost"/>.</summary>
+public enum GameOutcome
+{
+    Won,
+    Lost
+}
+```
+
+### `Application/Statistics/GameRecord.cs`
+```csharp
+using Domain;
+
+namespace Sudoku.Application.Statistics;
+/// <summary>Una partida terminada, tal como aparece en la lista de últimas partidas.</summary>
+public sealed record GameRecord(Difficulty Difficulty, GameOutcome Outcome, TimeSpan Elapsed, DateTimeOffset FinishedAt);
+```
+
+### `Application/Statistics/GameStatistics.cs`
+```csharp
+using Domain;
+using System.Collections.Immutable;
+
+namespace Sudoku.Application.Statistics;
+/// <summary>
+/// Estadísticas agregadas por dificultad más las últimas <see cref = "MaxRecentGames"/> partidas (la más nueva primero).
+/// Inmutable: cada cambio devuelve una instancia nueva. Nota: la igualdad de record compara las colecciones por referencia.
+/// </summary>
+public sealed record GameStatistics(ImmutableDictionary<Difficulty, DifficultyStatistics> ByDifficulty, ImmutableList<GameRecord> Recent)
+{
+    public const int MaxRecentGames = 20;
+    public static GameStatistics Empty { get; }
+
+    public DifficultyStatistics For(Difficulty difficulty);
+    public GameStatistics WithGameStarted(Difficulty difficulty);
+    public GameStatistics WithGameFinished(GameRecord record);
+}
+```
+
+### `Application/UseCases/ApplyHint.cs`
+```csharp
 using Domain;
 using global::Sudoku.Application.Games;
 
@@ -303,8 +469,23 @@ public sealed class ApplyHint(GetHint getHint, PlaceValue placeValue)
 {
     public Hint? Execute(GameSession session, Position? preferred = null);
 }
+```
 
-// --- ClearCell.cs ---
+### `Application/UseCases/ChangeTheme.cs`
+```csharp
+using Sudoku.Application.Ports;
+using Sudoku.Application.Settings;
+
+namespace Sudoku.Application.UseCases;
+/// <summary>Guarda el tema elegido conservando el resto de preferencias. Devuelve <c>false</c> si ya era ese tema.</summary>
+public sealed class ChangeTheme(ISettingsRepository repository)
+{
+    public bool Execute(ThemeKind theme);
+}
+```
+
+### `Application/UseCases/ClearCell.cs`
+```csharp
 using Domain;
 using global::Sudoku.Application.Games;
 
@@ -314,8 +495,10 @@ public sealed class ClearCell
 {
     public bool Execute(GameSession session, Position position);
 }
+```
 
-// --- GetHint.cs ---
+### `Application/UseCases/GetHint.cs`
+```csharp
 using Sudoku.Application.Ports;
 using Domain;
 
@@ -333,15 +516,49 @@ public sealed class GetHint(ISolver solver)
     /// <exception cref = "InvalidOperationException">Las celdas dadas no tienen solución.</exception>
     public Hint? Execute(Board board, Position? preferred = null);
 }
+```
 
-// --- Hint.cs ---
+### `Application/UseCases/GetSettings.cs`
+```csharp
+using Sudoku.Application.Games;
+using Sudoku.Application.Ports;
+using Sudoku.Application.Settings;
+
+namespace Sudoku.Application.UseCases;
+/// <summary>Devuelve las preferencias guardadas (las de por defecto si no hay archivo).</summary>
+/// <exception cref = "CorruptSaveException">El archivo de ajustes está dañado.</exception>
+public sealed class GetSettings(ISettingsRepository repository)
+{
+    public AppSettings Execute();
+}
+```
+
+### `Application/UseCases/GetStatistics.cs`
+```csharp
+using Sudoku.Application.Games;
+using Sudoku.Application.Ports;
+using Sudoku.Application.Statistics;
+
+namespace Sudoku.Application.UseCases;
+/// <summary>Devuelve las estadísticas guardadas (vacías si aún no hay ninguna).</summary>
+/// <exception cref = "CorruptSaveException">El archivo de estadísticas está dañado.</exception>
+public sealed class GetStatistics(IStatisticsRepository repository)
+{
+    public GameStatistics Execute();
+}
+```
+
+### `Application/UseCases/Hint.cs`
+```csharp
 using Domain;
 
 namespace Sudoku.Application.UseCases;
 /// <summary>Pista: el valor correcto de una celda vacía.</summary>
 public readonly record struct Hint(Position Position, int Value);
+```
 
-// --- LoadGame.cs ---
+### `Application/UseCases/LoadGame.cs`
+```csharp
 using global::Sudoku.Application.Games;
 using global::Sudoku.Application.Ports;
 
@@ -354,8 +571,10 @@ public sealed class LoadGame(IGameRepository repository, IClock clock)
 {
     public GameSession? Execute();
 }
+```
 
-// --- PlaceValue.cs ---
+### `Application/UseCases/PlaceValue.cs`
+```csharp
 using Domain;
 using global::Sudoku.Application.Games;
 
@@ -369,8 +588,41 @@ public sealed class PlaceValue
 {
     public bool Execute(GameSession session, Position position, int value);
 }
+```
 
-// --- Redo.cs ---
+### `Application/UseCases/RecordGameFinished.cs`
+```csharp
+using Domain;
+using Sudoku.Application.Games;
+using Sudoku.Application.Ports;
+using Sudoku.Application.Statistics;
+
+namespace Sudoku.Application.UseCases;
+/// <summary>
+/// Registra el final de una partida con el tiempo de la sesión. Abandonar = <see cref = "GameOutcome.Lost"/>.
+/// </summary>
+/// <exception cref = "InvalidOperationException">Se pidió <see cref = "GameOutcome.Won"/> pero el tablero no está resuelto.</exception>
+public sealed class RecordGameFinished(IStatisticsRepository repository, IClock clock)
+{
+    public void Execute(GameSession session, GameOutcome outcome);
+}
+```
+
+### `Application/UseCases/RecordGameStarted.cs`
+```csharp
+using Domain;
+using Sudoku.Application.Ports;
+
+namespace Sudoku.Application.UseCases;
+/// <summary>Registra que empezó una partida nueva. Las reanudadas no se vuelven a contar.</summary>
+public sealed class RecordGameStarted(IStatisticsRepository repository)
+{
+    public void Execute(Difficulty difficulty);
+}
+```
+
+### `Application/UseCases/Redo.cs`
+```csharp
 using Sudoku.Application.Games;
 
 namespace Sudoku.Application.UseCases;
@@ -378,8 +630,10 @@ public sealed class Redo
 {
     public bool Execute(GameSession session);
 }
+```
 
-// --- SaveGame.cs ---
+### `Application/UseCases/SaveGame.cs`
+```csharp
 using global::Sudoku.Application.Games;
 using global::Sudoku.Application.Ports;
 
@@ -389,8 +643,10 @@ public sealed class SaveGame(IGameRepository repository)
 {
     public void Execute(GameSession session);
 }
+```
 
-// --- StartNewGame.cs ---
+### `Application/UseCases/StartNewGame.cs`
+```csharp
 using Domain;
 using Sudoku.Application.Games;
 using Sudoku.Application.Ports;
@@ -404,8 +660,10 @@ public sealed class StartNewGame(IPuzzleGenerator generator, IClock clock)
 {
     public GameSession Execute(Difficulty difficulty, CancellationToken ct = default);
 }
+```
 
-// --- ToggleNote.cs ---
+### `Application/UseCases/ToggleNote.cs`
+```csharp
 using Domain;
 using Sudoku.Application.Games;
 
@@ -415,8 +673,10 @@ public sealed class ToggleNote
 {
     public bool Execute(GameSession session, Position position, int value);
 }
+```
 
-// --- Undo.cs ---
+### `Application/UseCases/Undo.cs`
+```csharp
 using Sudoku.Application.Games;
 
 namespace Sudoku.Application.UseCases;
@@ -424,8 +684,10 @@ public sealed class Undo
 {
     public bool Execute(GameSession session);
 }
+```
 
-// --- PuzzleGenerator.cs ---
+### `Infrastructure/Generation/PuzzleGenerator.cs`
+```csharp
 using Domain;
 using Sudoku.Application.Ports;
 using Sudoku.Application.Puzzles;
@@ -440,17 +702,23 @@ public sealed class PuzzleGenerator(ISolver solver, Random? random = null) : IPu
 {
     public Puzzle Generate(Difficulty difficulty, CancellationToken ct = default);
 }
+```
 
-// --- AppDataPaths.cs ---
+### `Infrastructure/Persistence/AppDataPaths.cs`
+```csharp
 namespace Infrastructure.Persistence;
 /// <summary>Rutas bajo una carpeta raíz; por defecto <c>%AppData%\SudokuGame\</c>.</summary>
 public sealed class AppDataPaths(string root) : IAppDataPaths
 {
     public static AppDataPaths ForCurrentUser();
     public string CurrentGamePath => Path.Combine(root, "games", "current.json");
+    public string StatisticsPath => Path.Combine(root, "statistics.json");
+    public string SettingsPath => Path.Combine(root, "settings.json");
 }
+```
 
-// --- AtomicFile.cs ---
+### `Infrastructure/Persistence/AtomicFile.cs`
+```csharp
 using System.Text;
 
 namespace Infrastructure.Persistence;
@@ -459,17 +727,27 @@ public static class AtomicFile
 {
     public static void WriteAllText(string path, string content);
 }
+```
 
-// --- IAppDataPaths.cs ---
+### `Infrastructure/Persistence/IAppDataPaths.cs`
+```csharp
 namespace Infrastructure.Persistence;
 /// <summary>Única fuente de las rutas de archivos de la app. Permite usar una carpeta temporal en las pruebas.</summary>
 public interface IAppDataPaths
 {
     /// <summary>Ruta de <c>games/current.json</c>.</summary>
     string CurrentGamePath { get; }
-}
 
-// --- JsonFileStore.cs ---
+    /// <summary>Ruta de <c>statistics.json</c>.</summary>
+    string StatisticsPath { get; }
+
+    /// <summary>Ruta de <c>settings.json</c>.</summary>
+    string SettingsPath { get; }
+}
+```
+
+### `Infrastructure/Persistence/JsonFileStore.cs`
+```csharp
 using System.Text.Json;
 
 namespace Infrastructure.Persistence;
@@ -488,8 +766,10 @@ public static class JsonFileStore
     /// <summary>Elimina el archivo. No falla si el archivo o su carpeta no existen.</summary>
     public static void Delete(string path);
 }
+```
 
-// --- JsonGameRepository.cs ---
+### `Infrastructure/Persistence/JsonGameRepository.cs`
+```csharp
 using System.Text.Json;
 using Sudoku.Application.Games;
 using Sudoku.Application.Ports;
@@ -505,8 +785,43 @@ public sealed class JsonGameRepository(IAppDataPaths paths) : IGameRepository
     public SavedGame? Load();
     public void Delete();
 }
+```
 
-// --- BacktrackingSolver.cs ---
+### `Infrastructure/Persistence/JsonSettingsRepository.cs`
+```csharp
+using Sudoku.Application.Games;
+using Sudoku.Application.Ports;
+using Sudoku.Application.Settings;
+
+namespace Infrastructure.Persistence;
+/// <summary>Guarda las preferencias en <c>settings.json</c>. Un archivo dañado lanza <see cref = "CorruptSaveException"/> y no se modifica.</summary>
+public sealed class JsonSettingsRepository(IAppDataPaths paths) : ISettingsRepository
+{
+    public AppSettings Load();
+    public void Save(AppSettings settings);
+}
+```
+
+### `Infrastructure/Persistence/JsonStatisticsRepository.cs`
+```csharp
+using Sudoku.Application.Games;
+using Sudoku.Application.Ports;
+using Sudoku.Application.Statistics;
+
+namespace Infrastructure.Persistence;
+/// <summary>
+/// Guarda las estadísticas en <c>statistics.json</c>. Un archivo dañado nunca se modifica:
+/// <see cref = "Load"/> lanza <see cref = "CorruptSaveException"/>.
+/// </summary>
+public sealed class JsonStatisticsRepository(IAppDataPaths paths) : IStatisticsRepository
+{
+    public GameStatistics Load();
+    public void Save(GameStatistics statistics);
+}
+```
+
+### `Infrastructure/Solving/BacktrackingSolver.cs`
+```csharp
 using Sudoku.Application.Ports;
 using Domain;
 
@@ -517,8 +832,10 @@ public sealed class BacktrackingSolver : ISolver
     public Board? Solve(Board board);
     public int CountSolutions(Board board, int limit);
 }
+```
 
-// --- SystemClock.cs ---
+### `Infrastructure/Time/SystemClock.cs`
+```csharp
 using Sudoku.Application.Ports;
 
 namespace Infrastructure.Time;
@@ -526,4 +843,5 @@ public sealed class SystemClock : IClock
 {
     public DateTimeOffset UtcNow => DateTimeOffset.UtcNow;
 }
+```
 
