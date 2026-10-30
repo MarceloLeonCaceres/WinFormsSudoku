@@ -915,9 +915,6 @@ public sealed record Theme
 
 ### `Sudoku.WinForms/Theming/ThemeApplier.cs`
 ```csharp
-using System.Drawing;
-using System.Windows.Forms;
-
 namespace Sudoku.WinForms.Theming;
 /// <summary>
 /// Pinta los controles estándar (formulario, paneles, etiquetas, botones) con el tema, de forma recursiva.
@@ -942,6 +939,89 @@ public sealed class ThemeService : IThemeService
 
     public event EventHandler? ThemeChanged;
     public bool SetTheme(ThemeKind kind);
+}
+```
+
+### `Sudoku.WinForms/Views/IMainView.cs`
+```csharp
+using Domain;
+using Sudoku.Application.Settings;
+using Sudoku.WinForms.Controls.BoardControl;
+using Sudoku.WinForms.Theming;
+
+namespace Sudoku.WinForms.Views;
+/// <summary>Contrato de la vista principal. No expone controles WinForms.</summary>
+public interface IMainView
+{
+    Difficulty SelectedDifficulty { get; }
+
+    ThemeKind SelectedTheme { get; }
+
+    bool NotesMode { get; }
+
+    event EventHandler? NewGameRequested;
+    event EventHandler? DifficultyChanged;
+    event EventHandler? UndoRequested;
+    event EventHandler? RedoRequested;
+    event EventHandler? NotesModeChanged;
+    event EventHandler? HintRequested;
+    event EventHandler? SolveRequested;
+    event EventHandler? PauseRequested;
+    event EventHandler? StatisticsRequested;
+    event EventHandler? ThemeChangeRequested;
+    event EventHandler<SelectionChangedEventArgs>? SelectionChanged;
+    event EventHandler<ValueEnteredEventArgs>? ValueEntered;
+    event EventHandler? ClearRequested;
+    void SetBoard(Board board);
+    void SetDifficulty(Difficulty difficulty);
+    void SetElapsedTime(TimeSpan elapsedTime);
+    void SetStatus(string message);
+    void SetNotesMode(bool enabled);
+    void SetPaused(bool paused);
+    void SetBusy(bool busy);
+    void SetUndoRedoState(bool canUndo, bool canRedo);
+    void SetTheme(Theme theme);
+}
+```
+
+### `Sudoku.WinForms/Views/MainForm.cs`
+```csharp
+using Domain;
+using Sudoku.Application.Settings;
+using Sudoku.WinForms.Controls.BoardControl;
+using Sudoku.WinForms.Theming;
+
+namespace Sudoku.WinForms.Views;
+/// <summary>Ventana principal. Solo presenta el estado y comunica las acciones del usuario.</summary>
+public sealed class MainForm : Form, IMainView
+{
+    public MainForm(IThemeService themeService);
+    public Difficulty SelectedDifficulty => (_difficultyComboBox.SelectedItem as Choice<Difficulty>)?.Value ?? Difficulty.Easy;
+    public ThemeKind SelectedTheme => (_themeComboBox.SelectedItem as Choice<ThemeKind>)?.Value ?? ThemeKind.Dark;
+    public bool NotesMode => _notesButton.Checked;
+
+    public event EventHandler? NewGameRequested;
+    public event EventHandler? DifficultyChanged;
+    public event EventHandler? UndoRequested;
+    public event EventHandler? RedoRequested;
+    public event EventHandler? NotesModeChanged;
+    public event EventHandler? HintRequested;
+    public event EventHandler? SolveRequested;
+    public event EventHandler? PauseRequested;
+    public event EventHandler? StatisticsRequested;
+    public event EventHandler? ThemeChangeRequested;
+    public event EventHandler<SelectionChangedEventArgs>? SelectionChanged;
+    public event EventHandler<ValueEnteredEventArgs>? ValueEntered;
+    public event EventHandler? ClearRequested;
+    public void SetBoard(Board board);
+    public void SetDifficulty(Difficulty difficulty);
+    public void SetElapsedTime(TimeSpan elapsedTime);
+    public void SetStatus(string message);
+    public void SetNotesMode(bool enabled);
+    public void SetPaused(bool paused);
+    public void SetBusy(bool busy);
+    public void SetUndoRedoState(bool canUndo, bool canRedo);
+    public void SetTheme(Theme theme);
 }
 ```
 
