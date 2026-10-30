@@ -1,8 +1,8 @@
-using Sudoku.Application.Ports;
+﻿using Sudoku.Application.Ports;
 
-namespace Sudoku.Application.Tests.TestDoubles;
+namespace Application.Tests.Unit.TestData;
 
-public sealed class FakeClock : IClock
+internal sealed class FakeClock : IClock
 {
     public DateTimeOffset UtcNow { get; private set; } = new(2026, 10, 29, 12, 0, 0, TimeSpan.Zero);
 
