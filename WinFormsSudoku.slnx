@@ -3,10 +3,12 @@
     <Project Path="src/Application/Application.csproj" />
     <Project Path="src/Domain/Domain.csproj" />
     <Project Path="src/Infrastructure/Infrastructure.csproj" />
+    <Project Path="src/Sudoku.WinForms/Sudoku.WinForms.csproj" Id="ec31fd14-26ee-44ea-abdf-900c7be66a7c" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Application.Tests.Unit/Application.Tests.Unit.csproj" Id="0e6fe9d4-4822-4d46-a0a5-9409b6079fe6" />
     <Project Path="tests/Domain.Tests.Unit/Domain.Tests.Unit.csproj" />
     <Project Path="tests/Infrastructure.Tests.Unit/Infrastructure.Tests.Unit.csproj" Id="629bab55-b302-401a-994e-223427b0fcb0" />
+    <Project Path="tests/Sudoku.WinForms.Tests/Sudoku.WinForms.Tests.csproj" Id="1b76775b-a9f9-4735-bdaa-ce3a222aa01d" />
   </Folder>
 </Solution>
