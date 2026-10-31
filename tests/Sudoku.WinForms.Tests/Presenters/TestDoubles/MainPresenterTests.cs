@@ -1,6 +1,10 @@
 ﻿using Domain;
+using Sudoku.Application.Games;
+using Sudoku.Application.Ports;
+using Sudoku.Application.Puzzles;
 using Sudoku.Application.UseCases;
 using Sudoku.WinForms.Presenters;
+using Sudoku.WinForms.Services;
 using Sudoku.WinForms.Tests.Presenters.TestDoubles;
 
 namespace Sudoku.WinForms.Tests.Presenters;
@@ -11,7 +15,7 @@ public sealed class MainPresenterTests
     private readonly CurrentGame _current = new();
     private readonly RecordingDialogService _dialogs = new();
 
-    private MainPresenter CreatePresenter(FakeGenerator generator) =>
+    private MainPresenter CreatePresenter(IPuzzleGenerator generator) =>
         new(_view, new StartNewGame(generator, new FakeClock()), _current, _dialogs);
 
     [Fact]
@@ -78,6 +82,16 @@ public sealed class MainPresenterTests
         Assert.False(_view.IsBusy);
         Assert.Empty(_dialogs.Errors);
     }
+    
+    [Fact]
+    public async Task StartNewGame_TellsViewTheGameIsNotPaused()
+    {
+        using var presenter = CreatePresenter(new FakeGenerator((d, _) => SamplePuzzle.Create(d)));
+
+        await presenter.StartNewGameAsync();
+
+        Assert.False(_view.LastPaused);
+    }
 
     [Fact]
     public async Task NewGameRequested_Event_StartsGeneration()
@@ -106,4 +120,145 @@ public sealed class MainPresenterTests
 
         Assert.Equal(0, generator.CallCount);
     }
+    private sealed class BlockingGenerator : IPuzzleGenerator
+    {
+        public ManualResetEventSlim Started { get; } = new();
+
+        public Puzzle Generate(Difficulty difficulty, CancellationToken ct = default)
+        {
+            Started.Set();
+            ct.WaitHandle.WaitOne();
+            ct.ThrowIfCancellationRequested();
+            throw new InvalidOperationException("Debió cancelarse.");
+        }
+    }
+    private sealed class FixedClock : IClock
+    {
+        public DateTimeOffset UtcNow { get; set; } = DateTimeOffset.UnixEpoch;
+    }
+
+    private sealed class RecordingDialogService : IDialogService
+    {
+        public List<(string Title, string Message)> Errors { get; } = [];
+
+        public void ShowError(string title, string message) => Errors.Add((title, message));
+    }
+
+    private static (MainPresenter Sut, FakeMainView View, CurrentGame Current, RecordingDialogService Dialogs)
+        CreateSut(IPuzzleGenerator generator)
+    {
+        var view = new FakeMainView();
+        var current = new CurrentGame();
+        var dialogs = new RecordingDialogService();
+        var sut = new MainPresenter(view, new StartNewGame(generator, new FixedClock()), current, dialogs);
+        return (sut, view, current, dialogs);
+    }
+
+    private static GameSession CreateRunningSession()
+    {
+        const string givens = "530070000600195000098000060800060003400803001700020006060000280000419005000080079";
+        const string solution = "534678912672195348198342567859761423426853791713924856961537284287419635345286179";
+
+        var puzzle = new Puzzle(Board.FromGivens(givens), Board.FromGivens(solution), Difficulty.Easy);
+        var session = new GameSession(puzzle, new FakeClock());
+        session.Start();
+        return session;
+    }
+    [Fact]
+    public async Task CancelRequested_WhileGenerating_ClearsBusyWithoutShowingError()
+    {
+        var generator = new BlockingGenerator();
+        using var sut = CreatePresenter(generator);
+
+        var generation = sut.StartNewGameAsync();
+        generator.Started.Wait();
+        _view.RaiseCancelRequested();
+        await generation;
+
+        Assert.False(_view.IsBusy);
+        Assert.Null(_current.Session);
+        Assert.Empty(_dialogs.Errors);
+        Assert.Equal("Generación cancelada", _view.Statuses[^1]);
+    }
+
+    [Fact]
+    public void CancelRequested_WithoutGeneration_DoesNothing()
+    {
+        using var sut = CreatePresenter(new BlockingGenerator());
+
+        _view.RaiseCancelRequested();
+
+        Assert.Empty(_view.BusyChanges);
+    }
+
+    [Fact]
+    public void PauseRequested_RunningSession_PausesAndNotifiesView()
+    {
+        using var sut = CreatePresenter(new BlockingGenerator());
+        var session = CreateRunningSession();
+        _current.Set(session);
+
+        _view.RaisePauseRequested();
+
+        Assert.False(session.IsRunning);
+        Assert.True(_view.LastPaused);
+    }
+
+    [Fact]
+    public void PauseRequested_PausedSession_ResumesAndNotifiesView()
+    {
+        using var sut = CreatePresenter(new BlockingGenerator());
+        var session = CreateRunningSession();
+        session.Pause();
+        _current.Set(session);
+
+        _view.RaisePauseRequested();
+
+        Assert.True(session.IsRunning);
+        Assert.False(_view.LastPaused);
+    }
+
+    [Fact]
+    public void PauseRequested_WithoutSession_IsIgnored()
+    {
+        using var sut = CreatePresenter(new BlockingGenerator());
+
+        _view.RaisePauseRequested();
+
+        Assert.Empty(_view.PausedChanges);
+    }
+
+    [Fact]
+    public async Task PauseRequested_WhileGenerating_IsIgnored()
+    {
+        var generator = new BlockingGenerator();
+        using var sut = CreatePresenter(generator);
+        var session = CreateRunningSession();
+        _current.Set(session);
+
+        var generation = sut.StartNewGameAsync();
+        generator.Started.Wait();
+        _view.RaisePauseRequested();
+        _view.RaiseCancelRequested();
+        await generation;
+
+        Assert.True(session.IsRunning);
+        Assert.Empty(_view.PausedChanges);
+    }
+
+    [Fact]
+    public void AfterDispose_PauseAndCancel_AreIgnored()
+    {
+        var sut = CreatePresenter(new BlockingGenerator());
+        var session = CreateRunningSession();
+        _current.Set(session);
+        sut.Dispose();
+
+        _view.RaisePauseRequested();
+        _view.RaiseCancelRequested();
+
+        Assert.True(session.IsRunning);
+        Assert.Empty(_view.PausedChanges);
+    }
+
 }
