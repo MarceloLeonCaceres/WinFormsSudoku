@@ -99,6 +99,7 @@ public sealed class MainForm : Form, IMainView
     public event EventHandler? PauseRequested;
     public event EventHandler? StatisticsRequested;
     public event EventHandler? ThemeChangeRequested;
+    public event EventHandler? CancelRequested;
     public event EventHandler<SelectionChangedEventArgs>? SelectionChanged;
     public event EventHandler<ValueEnteredEventArgs>? ValueEntered;
     public event EventHandler? ClearRequested;
@@ -136,10 +137,11 @@ public sealed class MainForm : Form, IMainView
         _pauseButton.Text = paused ? "Continuar" : "Pausar";
         UpdateInteractionState();
     }
-
+    
     public void SetBusy(bool busy)
     {
         _isBusy = busy;
+    _newGameButton.Text = busy ? "Cancelar" : "Nueva partida";
         UseWaitCursor = busy;
         UpdateInteractionState();
     }
@@ -338,7 +340,12 @@ public sealed class MainForm : Form, IMainView
 
     private void WireEvents()
     {
-        _newGameButton.Click += (_, _) => NewGameRequested?.Invoke(this, EventArgs.Empty);
+        _newGameButton.Click += (_, _) =>
+        {
+            if (_isBusy) CancelRequested?.Invoke(this, EventArgs.Empty);
+            else NewGameRequested?.Invoke(this, EventArgs.Empty);
+        };
+        _pauseButton.Click += (_, _) => PauseRequested?.Invoke(this, EventArgs.Empty);
         _undoButton.Click += (_, _) => UndoRequested?.Invoke(this, EventArgs.Empty);
         _redoButton.Click += (_, _) => RedoRequested?.Invoke(this, EventArgs.Empty);
         _notesButton.CheckedChanged += (_, _) =>
@@ -349,7 +356,6 @@ public sealed class MainForm : Form, IMainView
         };
         _hintButton.Click += (_, _) => HintRequested?.Invoke(this, EventArgs.Empty);
         _solveButton.Click += (_, _) => SolveRequested?.Invoke(this, EventArgs.Empty);
-        _pauseButton.Click += (_, _) => PauseRequested?.Invoke(this, EventArgs.Empty);
         _statisticsButton.Click += (_, _) => StatisticsRequested?.Invoke(this, EventArgs.Empty);
         _difficultyComboBox.SelectedIndexChanged += (_, _) =>
         {
