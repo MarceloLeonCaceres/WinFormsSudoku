@@ -118,7 +118,7 @@ Modelos y políticas:
 
 Patrón MVP (Model-View-Presenter), con vistas pasivas:
 
-- `Views/MainForm` + `Views/IMainView`: ventana principal y contrato de su vista. `IMainView` no expone controles WinForms. `MainForm` recibe `IThemeService` y rellena los combos de dificultad y tema con `Choice<T>`.
+- `Views/MainForm` + `Views/IMainView`: ventana principal y contrato de su vista. IMainView no expone controles WinForms; compone IBoardView (tablero) e IGameControlsView (barra lateral y controles de juego, incluida la pausa). MainForm recibe IThemeService y rellena los combos de dificultad y tema con Choice<T>.
 - `Controls/BoardControl/BoardControl`: control personalizado que dibuja el tablero Sudoku mediante GDI+.
 - `Controls/BoardControl/BoardGeometry`: calcula la geometría del tablero y realiza el hit testing. No depende de WinForms ni de GDI+.
 - `Controls/BoardControl/BoardRenderer`: responsable exclusivamente del dibujo del tablero. Es interno y estático; recibe el estado del dominio y el tema actual.
@@ -127,6 +127,8 @@ Patrón MVP (Model-View-Presenter), con vistas pasivas:
 - `Program.cs`: composition root y configuración del contenedor de DI.
 - `CompositionRoot`: centraliza el registro de dependencias.
 - `Theming`: contiene `Theme`, `Palettes`, `IThemeService`, `ThemeService` y `ThemeApplier`.
+- `Views/IBoardView`, `Presenters/ (MainPresenter, BoardPresenter, CurrentGame)`, `Views/IGameControlsView` y `Services/ (IDialogService, MessageBoxDialogService)`; IMainView compone IBoardView + IGameControlsView».
+- `MainPresenter`: nueva partida (generación en segundo plano, cancelable desde la vista con CancelRequested) y pausa (alterna session.Pause()/Start() y avisa con SetPaused). Se ignora la pausa si no hay sesión o se está generando.
 
 #### BoardControl
 
@@ -211,9 +213,9 @@ Reglas:
 6. UI WinForms con temas:
    - Parte 1: infraestructura de temas y composición de dependencias (completada).
    - Parte 2: BoardControl con dibujo GDI+ y geometría (completada).
-   - Parte 3: integración del tablero con MVP y casos de uso (pendiente: presenter; `MainForm` e `IMainView` ya existen como cascarón de la Parte 4).
-   - Parte 4: ventana principal, barra lateral y controles de juego (en progreso: `MainForm` e `IMainView` creados).
-   - Parte 5: interacción completa, temporizador y actualización de estado.
+   - Parte 3: integración del tablero con MVP y casos de uso (completada).
+   - Parte 4: ventana principal, barra lateral y controles de juego (completada).
+   - Parte 5: interacción completa, temporizador que refresca el tiempo, deshacer/rehacer, pista, resolver (SolveGame), guardado/reanudación, estadísticas, cambio de tema, y registrar como perdida la partida que se reemplaza o abandona (pendiente: un chat para esta parte).
 7. Pulido y pruebas.
 
 ## 9. Decisiones registradas
@@ -274,3 +276,17 @@ Reglas:
 | 2026-10-30 | SelectedPosition tiene setter público y dispara SelectionChanged al asignar una celda distinta |
 | 2026-10-30 | Vistas en `Sudoku.WinForms.Views` (`IMainView`, `MainForm`) y controles en `Sudoku.WinForms.Controls.BoardControl`; `SelectionChangedEventArgs` y `ValueEnteredEventArgs` propios |
 | 2026-10-30 | MainForm recibe IThemeService y usa `Choice<T>` para los combos de dificultad y tema |
+| 2026-10-30 | Hito 6, partes 3, 4, y 5: un chat por parte, en ese orden |
+| 2026-10-30 | En pausa solo se detiene el cronómetro y se bloquea la entrada; el tablero sigue visible |
+| 2026-10-30 | SolveGame muestra la solución en una vista aparte y no modifica la GameSession ni las estadísticas |
+| 2026-10-31 | `IBoardView` se separa de `IMainView`, que ahora hereda de ella (ISP). |
+| 2026-10-31 | Los errores de UI pasan por el puerto `IDialogService` (implementado por `MessageBoxDialogService`). |
+| 2026-10-31 | `BoardPresenter` ignora la entrada si no hay sesión, no hay selección o `!session.IsRunning`. |
+| 2026-10-31 | `MainPresenter` llama a `session.Start()` tras generar y avisa a la vista con `SetPaused(false)`; sin ese aviso `MainForm` dejaba el tablero deshabilitado (`UpdateInteractionState`).|
+| 2026-10-31 | `StartNewGameAsync()` es pública, no lanza excepciones, y una petición nueva cancela la generación anterior. |
+| 2026-10-31 | `CompositionRoot`: `MainForm` queda como un único singleton, con `IMainView` e `IBoardView` resueltos desde la misma instancia.  |
+| 2026-10-31 | IMainView se divide: compone IBoardView + IGameControlsView (ISP). MainPresenter sigue dependiendo de IMainView. |
+| 2026-10-31 | Cancelar la generación: el botón «Nueva partida» pasa a «Cancelar» mientras la vista está ocupada (evento CancelRequested). Cancelar no muestra diálogo de error; el estado queda en «Generación cancelada». |
+| 2026-10-31 | Solo la generación vigente llama a SetBusy(false): una generación reemplazada no apaga el «ocupado» de la nueva. |
+| 2026-10-31 | La pausa vive en MainPresenter, que llama directamente a session.Pause()/Start() (sin caso de uso). Se ignora sin sesión o mientras se genera. |
+| 2026-10-31 | Tras generar, MainPresenter muestra en la vista la dificultad de la sesión (SetDifficulty). |

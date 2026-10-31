@@ -1,4 +1,4 @@
-### `Domain/Board.cs`
+### `src/Domain/Board.cs`
 ```csharp
 using System;
 using System.Collections.Generic;
@@ -27,7 +27,7 @@ public sealed class Board : IEquatable<Board>
 }
 ```
 
-### `Domain/CandidateSet.cs`
+### `src/Domain/CandidateSet.cs`
 ```csharp
 using System.Collections;
 using System.Numerics;
@@ -58,7 +58,7 @@ public readonly struct CandidateSet : IEquatable<CandidateSet>, IEnumerable<int>
 }
 ```
 
-### `Domain/Cell.cs`
+### `src/Domain/Cell.cs`
 ```csharp
 using System;
 using System.Collections.Generic;
@@ -86,7 +86,7 @@ public readonly record struct Cell
 }
 ```
 
-### `Domain/Difficulty.cs`
+### `src/Domain/Difficulty.cs`
 ```csharp
 using System;
 using System.Collections.Generic;
@@ -102,7 +102,7 @@ public enum Difficulty
 }
 ```
 
-### `Domain/Position.cs`
+### `src/Domain/Position.cs`
 ```csharp
 using System;
 using System.Collections.Generic;
@@ -125,7 +125,7 @@ public readonly record struct Position
 }
 ```
 
-### `Domain/SudokuConstants.cs`
+### `src/Domain/SudokuConstants.cs`
 ```csharp
 using System;
 using System.Collections.Generic;
@@ -143,7 +143,7 @@ public static class SudokuConstants
 }
 ```
 
-### `Domain/SudokuRules.cs`
+### `src/Domain/SudokuRules.cs`
 ```csharp
 using System;
 using System.Collections.Generic;
@@ -164,7 +164,7 @@ public static class SudokuRules
 }
 ```
 
-### `Domain/ValueGuard.cs`
+### `src/Domain/ValueGuard.cs`
 ```csharp
 using System;
 using System.Collections.Generic;
@@ -177,7 +177,444 @@ public static class ValueGuard
 }
 ```
 
-### `Application/Games/CorruptSaveException.cs`
+### `tests/Application.Tests.Unit/ApplyHintTests.cs`
+```csharp
+using Application.Tests.Unit.TestData;
+using Domain;
+using global::Sudoku.Application.Games;
+using global::Sudoku.Application.Ports;
+using global::Sudoku.Application.Puzzles;
+using global::Sudoku.Application.UseCases;
+
+namespace Application.Tests.Unit;
+public class ApplyHintTests
+{
+    [Fact]
+    public void PlacesSolutionValueInPreferredEmptyCell();
+    [Fact]
+    public void WithoutPreferred_UsesFirstEmptyCell();
+    [Fact]
+    public void PreferredCellNotEmpty_FallsBackToFirstEmptyCell();
+    [Fact]
+    public void RemovesHintValueFromPeerNotes();
+    [Fact]
+    public void IsUndoableInOneStep();
+    [Fact]
+    public void FullBoard_ReturnsNullWithoutChanges();
+    [Fact]
+    public void UnsolvableGivens_PropagatesExceptionAndKeepsBoard();
+}
+```
+
+### `tests/Application.Tests.Unit/ClearCellTests.cs`
+```csharp
+using Application.Tests.Unit.TestData;
+using Domain;
+using global::Sudoku.Application.UseCases;
+
+namespace Application.Tests.Unit;
+public class ClearCellTests
+{
+    [Fact]
+    public void ClearsPlayerValue();
+    [Fact]
+    public void ClearsNotesOfEmptyCell();
+    [Fact]
+    public void GivenCell_ReturnsFalse();
+    [Fact]
+    public void AlreadyEmptyCellWithoutNotes_ReturnsFalse();
+    [Fact]
+    public void IsUndoable();
+}
+```
+
+### `tests/Application.Tests.Unit/GameSessionTests.cs`
+```csharp
+using Application.Tests.Unit.TestData;
+using Domain;
+using global::Sudoku.Application.Games;
+
+namespace Application.Tests.Unit;
+public class GameSessionTests
+{
+    [Fact]
+    public void NewSession_StartsFromPuzzleWithoutHistory();
+    [Fact]
+    public void Apply_ChangedBoard_UpdatesBoardAndEnablesUndo();
+    [Fact]
+    public void Apply_SameBoard_ReturnsFalseAndKeepsHistoryEmpty();
+    [Fact]
+    public void Apply_Null_Throws();
+    [Fact]
+    public void Undo_RestoresPreviousBoardAndEnablesRedo();
+    [Fact]
+    public void Redo_ReappliesUndoneBoard();
+    [Fact]
+    public void Apply_AfterUndo_ClearsRedoHistory();
+    [Fact]
+    public void UndoAndRedo_WithEmptyHistory_ReturnFalse();
+}
+```
+
+### `tests/Application.Tests.Unit/PlaceValueTests.cs`
+```csharp
+using Application.Tests.Unit.TestData;
+using Domain;
+using global::Sudoku.Application.UseCases;
+
+namespace Application.Tests.Unit;
+public class PlaceValueTests
+{
+    [Fact]
+    public void PlacesPlayerValueInEmptyCell();
+    [Fact]
+    public void GivenCell_ReturnsFalseAndKeepsBoardAndHistory();
+    [Fact]
+    public void ReplacesExistingPlayerValue();
+    [Fact]
+    public void SameValueTwice_SecondCallReturnsFalseWithoutExtraHistory();
+    [Fact]
+    public void ClearsOwnNotes();
+    [Fact]
+    public void RemovesValueFromPeerNotes_AndKeepsNonPeersAndOtherNotes();
+    [Fact]
+    public void AllowsConflictingValue_AndBothCellsAreReportedAsConflicts();
+    [Fact]
+    public void ValueAndPeerNotesCleanup_UndoTogetherInOneStep();
+}
+```
+
+### `tests/Application.Tests.Unit/StartNewGameTests.cs`
+```csharp
+using Application.Tests.Unit.TestData;
+using Domain;
+using global::Sudoku.Application.Ports;
+using global::Sudoku.Application.Puzzles;
+using global::Sudoku.Application.UseCases;
+using Sudoku.Application.Tests.TestDoubles;
+
+namespace Application.Tests.Unit;
+public class StartNewGameTests
+{
+    [Fact]
+    public void CreatesSessionFromGeneratedPuzzle();
+    [Fact]
+    public void PassesDifficultyAndCancellationTokenToGenerator();
+}
+```
+
+### `tests/Application.Tests.Unit/ToggleNoteTests.cs`
+```csharp
+using Application.Tests.Unit.TestData;
+using Domain;
+using global::Sudoku.Application.UseCases;
+
+namespace Application.Tests.Unit;
+public class ToggleNoteTests
+{
+    [Fact]
+    public void AddsNote_AndTogglingAgainRemovesIt();
+    [Fact]
+    public void KeepsOtherNotes();
+    [Fact]
+    public void CellWithPlayerValue_ReturnsFalse();
+    [Fact]
+    public void GivenCell_ReturnsFalse();
+    [Fact]
+    public void IsUndoable();
+}
+```
+
+### `tests/Application.Tests.Unit/UndoTests.cs`
+```csharp
+using Application.Tests.Unit.TestData;
+using global::Sudoku.Application.UseCases;
+
+namespace Application.Tests.Unit;
+public class UndoTests
+{
+    [Fact]
+    public void RevertsLastAction();
+    [Fact]
+    public void WithoutHistory_ReturnsFalse();
+}
+
+public class RedoTests
+{
+    [Fact]
+    public void ReappliesUndoneAction();
+    [Fact]
+    public void WithoutUndoneActions_ReturnsFalse();
+}
+```
+
+### `tests/Domain.Tests.Unit/BoardGivensOnlyTests.cs`
+```csharp
+using Domain;
+
+namespace Domain.Tests;
+public sealed class BoardGivensOnlyTests
+{
+    [Fact]
+    public void GivensOnly_RemovesPlayerValuesAndNotes();
+    [Fact]
+    public void GivensOnly_KeepsGivenCells();
+    [Fact]
+    public void GivensOnly_DoesNotModifyOriginalBoard();
+    [Fact]
+    public void GivensOnly_OnEmptyBoard_ReturnsEmptyBoard();
+}
+```
+
+### `tests/Domain.Tests.Unit/BoardTests.cs`
+```csharp
+namespace Domain.Tests.Unit;
+public class BoardTests
+{
+    [Fact]
+    public void Empty_HasAllCellsEmpty();
+    [Fact]
+    public void FromGivens_ParsesGivensAndEmptyCells();
+    [Fact]
+    public void FromGivens_TreatsDotAsEmpty();
+    [Fact]
+    public void FromGivens_WrongLength_Throws();
+    [Fact]
+    public void FromGivens_InvalidCharacter_Throws();
+    [Fact]
+    public void FromGivens_Null_Throws();
+    [Fact]
+    public void WithValue_ReturnsNewBoard_AndLeavesOriginalUntouched();
+    [Fact]
+    public void WithValue_ChangesOnlyTheTargetCell();
+    [Fact]
+    public void WithValue_OnGivenCell_Throws();
+    [Fact]
+    public void WithNotes_SetsNotesOnEmptyCell();
+    [Fact]
+    public void WithNotes_OnFilledCell_Throws();
+    [Fact]
+    public void WithCleared_RemovesPlayerValue();
+    [Fact]
+    public void WithCleared_OnGivenCell_Throws();
+    [Fact]
+    public void Equality_IsByContent();
+    [Fact]
+    public void ToValuesString_RoundTripsGivens();
+    [Fact]
+    public void ToValuesString_IncludesPlayerValues();
+}
+```
+
+### `tests/Domain.Tests.Unit/CandidateSetSetOperationsTests.cs`
+```csharp
+using Domain;
+
+namespace Domain.Tests;
+public sealed class CandidateSetSetOperationsTests
+{
+    [Fact]
+    public void Union_CombinesValuesOfBothSets();
+    [Fact]
+    public void Union_WithEmptySet_ReturnsSameSet();
+    [Fact]
+    public void Except_RemovesValuesPresentInOtherSet();
+    [Fact]
+    public void Except_FromAll_ReturnsComplement();
+    [Fact]
+    public void Except_WithEmptySet_ReturnsSameSet();
+    [Fact]
+    public void Except_WithItself_ReturnsEmptySet();
+}
+```
+
+### `tests/Domain.Tests.Unit/CandidateSetTests.cs`
+```csharp
+namespace Domain.Tests.Unit;
+public class CandidateSetTests
+{
+    [Fact]
+    public void Empty_HasNoCandidates();
+    [Fact]
+    public void All_ContainsOneThroughNine();
+    [Fact]
+    public void Add_IncludesValue_AndDoesNotMutateOriginal();
+    [Fact]
+    public void Add_IsIdempotent();
+    [Fact]
+    public void Remove_ExcludesValue();
+    [Fact]
+    public void Remove_AbsentValue_IsNoOp();
+    [Fact]
+    public void Toggle_Twice_ReturnsOriginal();
+    [Fact]
+    public void Enumeration_IsAscending();
+    [Fact]
+    public void Equality_IsByContent();
+    [Theory]
+    [InlineData(0)]
+    [InlineData(10)]
+    [InlineData(-3)]
+    public void InvalidValue_Throws(int value);
+    [Fact]
+    public void ToString_ListsCandidates();
+}
+```
+
+### `tests/Domain.Tests.Unit/CellTests.cs`
+```csharp
+using Xunit;
+
+namespace Domain.Tests.Unit;
+public class CellTests
+{
+    [Fact]
+    public void Empty_HasNoValueNotGivenAndNoNotes();
+    [Fact]
+    public void Default_EqualsEmpty();
+    [Fact]
+    public void Given_HasValueAndIsGiven();
+    [Theory]
+    [InlineData(0)]
+    [InlineData(10)]
+    public void Given_InvalidValue_Throws(int value);
+    [Fact]
+    public void WithValue_OnEmpty_SetsPlayerValue();
+    [Fact]
+    public void WithValue_ClearsNotes();
+    [Fact]
+    public void WithValue_OnGiven_Throws();
+    [Theory]
+    [InlineData(0)]
+    [InlineData(10)]
+    public void WithValue_InvalidValue_Throws(int value);
+    [Fact]
+    public void WithNotes_OnEmpty_SetsNotes();
+    [Fact]
+    public void WithNotes_OnFilledCell_Throws();
+    [Fact]
+    public void WithNotes_OnGiven_Throws();
+    [Fact]
+    public void Cleared_OnFilledCell_ReturnsEmpty();
+    [Fact]
+    public void Cleared_OnCellWithNotes_RemovesNotes();
+    [Fact]
+    public void Cleared_OnGiven_Throws();
+}
+```
+
+### `tests/Domain.Tests.Unit/PositionTests.cs`
+```csharp
+namespace Domain.Tests.Unit;
+public class PositionTests
+{
+    [Theory]
+    [InlineData(0, 0, 0)]
+    [InlineData(0, 2, 0)]
+    [InlineData(0, 3, 1)]
+    [InlineData(2, 8, 2)]
+    [InlineData(3, 0, 3)]
+    [InlineData(4, 4, 4)]
+    [InlineData(5, 7, 5)]
+    [InlineData(8, 8, 8)]
+    public void Box_ReturnsExpectedBoxIndex(int row, int column, int expectedBox);
+    [Theory]
+    [InlineData(-1, 0)]
+    [InlineData(0, -1)]
+    [InlineData(9, 0)]
+    [InlineData(0, 9)]
+    public void Constructor_OutOfRange_Throws(int row, int column);
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(9)]
+    [InlineData(40)]
+    [InlineData(80)]
+    public void FromIndex_RoundTripsWithIndex(int index);
+    [Fact]
+    public void FromIndex_MapsRowAndColumn();
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(81)]
+    public void FromIndex_OutOfRange_Throws(int index);
+    [Fact]
+    public void All_ContainsEightyOneDistinctPositions();
+    [Fact]
+    public void Equality_IsByValue();
+}
+```
+
+### `tests/Domain.Tests.Unit/SudokuRulesTests.cs`
+```csharp
+namespace Domain.Tests.Unit;
+public class SudokuRulesTests
+{
+    // ---- Peers ----
+    [Fact]
+    public void Peers_EveryPositionHasTwentyPeers();
+    [Fact]
+    public void Peers_DoesNotIncludeThePositionItself();
+    [Fact]
+    public void Peers_IncludesRowColumnAndBoxButNothingElse();
+    [Fact]
+    public void Peers_AreSymmetric();
+    // ---- IsValidPlacement ----
+    [Fact]
+    public void IsValidPlacement_SameRow_IsInvalid();
+    [Fact]
+    public void IsValidPlacement_SameColumn_IsInvalid();
+    [Fact]
+    public void IsValidPlacement_SameBox_IsInvalid();
+    [Fact]
+    public void IsValidPlacement_UnrelatedCellOrOtherValue_IsValid();
+    [Fact]
+    public void IsValidPlacement_IgnoresTheCellItself();
+    [Fact]
+    public void IsValidPlacement_ConsidersGivenCells();
+    [Theory]
+    [InlineData(0)]
+    [InlineData(10)]
+    public void IsValidPlacement_InvalidValue_Throws(int value);
+    [Fact]
+    public void IsValidPlacement_NullBoard_Throws();
+    // ---- FindConflicts ----
+    [Fact]
+    public void FindConflicts_EmptyBoard_ReturnsNone();
+    [Fact]
+    public void FindConflicts_ValidPuzzle_ReturnsNone();
+    [Fact]
+    public void FindConflicts_RowDuplicate_MarksBothCells();
+    [Fact]
+    public void FindConflicts_ColumnDuplicate_MarksBothCells();
+    [Fact]
+    public void FindConflicts_BoxDuplicate_MarksBothCells();
+    [Fact]
+    public void FindConflicts_ThreeDuplicatesInARow_MarksAllThree();
+    [Fact]
+    public void FindConflicts_SameValueInUnrelatedCells_IsNotAConflict();
+    [Fact]
+    public void FindConflicts_NotesNeverConflict();
+    [Fact]
+    public void FindConflicts_GivenVersusPlayerValue_MarksBoth();
+    // ---- IsComplete / IsSolved ----
+    [Fact]
+    public void IsComplete_EmptyBoard_IsFalse();
+    [Fact]
+    public void IsComplete_IncompletePuzzle_IsFalse();
+    [Fact]
+    public void IsComplete_FullBoard_IsTrue();
+    [Fact]
+    public void IsSolved_ValidSolution_IsTrue();
+    [Fact]
+    public void IsSolved_IncompleteBoard_IsFalse();
+    [Fact]
+    public void IsSolved_CompleteWithCorrectPlayerValue_IsTrue();
+    [Fact]
+    public void IsSolved_CompleteWithConflict_IsFalse();
+}
+```
+
+### `src/Application/Games/CorruptSaveException.cs`
 ```csharp
 namespace Sudoku.Application.Games;
 /// <summary>El archivo de partida existe pero no se puede interpretar (dañado, incompleto o de una versión desconocida).</summary>
@@ -188,7 +625,7 @@ public sealed class CorruptSaveException : Exception
 }
 ```
 
-### `Application/Games/GameSession.cs`
+### `src/Application/Games/GameSession.cs`
 ```csharp
 using Domain;
 using global::Sudoku.Application.Puzzles;
@@ -222,7 +659,7 @@ public sealed class GameSession
 }
 ```
 
-### `Application/Games/PlayTimer.cs`
+### `src/Application/Games/PlayTimer.cs`
 ```csharp
 using global::Sudoku.Application.Ports;
 
@@ -244,7 +681,7 @@ public sealed class PlayTimer
 }
 ```
 
-### `Application/Games/SavedGame.cs`
+### `src/Application/Games/SavedGame.cs`
 ```csharp
 using Domain;
 
@@ -253,7 +690,7 @@ namespace Sudoku.Application.Games;
 public sealed record SavedGame(Board Board, Difficulty Difficulty, TimeSpan Elapsed);
 ```
 
-### `Application/Ports/IClock.cs`
+### `src/Application/Ports/IClock.cs`
 ```csharp
 namespace Sudoku.Application.Ports;
 /// <summary>Puerto del reloj. Permite probar tiempos sin depender de la hora real.</summary>
@@ -263,7 +700,7 @@ public interface IClock
 }
 ```
 
-### `Application/Ports/IGameRepository.cs`
+### `src/Application/Ports/IGameRepository.cs`
 ```csharp
 using global::Sudoku.Application.Games;
 
@@ -280,7 +717,7 @@ public interface IGameRepository
 }
 ```
 
-### `Application/Ports/IPuzzleGenerator.cs`
+### `src/Application/Ports/IPuzzleGenerator.cs`
 ```csharp
 using Domain;
 using Sudoku.Application.Puzzles;
@@ -296,7 +733,7 @@ public interface IPuzzleGenerator
 }
 ```
 
-### `Application/Ports/ISettingsRepository.cs`
+### `src/Application/Ports/ISettingsRepository.cs`
 ```csharp
 using Sudoku.Application.Games;
 using Sudoku.Application.Settings;
@@ -312,7 +749,7 @@ public interface ISettingsRepository
 }
 ```
 
-### `Application/Ports/ISolver.cs`
+### `src/Application/Ports/ISolver.cs`
 ```csharp
 using Domain;
 
@@ -333,7 +770,7 @@ public interface ISolver
 }
 ```
 
-### `Application/Ports/IStatisticsRepository.cs`
+### `src/Application/Ports/IStatisticsRepository.cs`
 ```csharp
 using Sudoku.Application.Games;
 using Sudoku.Application.Statistics;
@@ -349,7 +786,7 @@ public interface IStatisticsRepository
 }
 ```
 
-### `Application/Puzzles/DifficultyProfile.cs`
+### `src/Application/Puzzles/DifficultyProfile.cs`
 ```csharp
 using Domain;
 
@@ -361,7 +798,7 @@ public sealed record DifficultyProfile(Difficulty Difficulty, int MinGivens, int
 }
 ```
 
-### `Application/Puzzles/Puzzle.cs`
+### `src/Application/Puzzles/Puzzle.cs`
 ```csharp
 using Domain;
 
@@ -370,7 +807,7 @@ namespace Sudoku.Application.Puzzles;
 public sealed record Puzzle(Board Board, Board Solution, Difficulty Difficulty);
 ```
 
-### `Application/Settings/AppSettings.cs`
+### `src/Application/Settings/AppSettings.cs`
 ```csharp
 namespace Sudoku.Application.Settings;
 /// <summary>Preferencias persistidas de la aplicación.</summary>
@@ -380,7 +817,7 @@ public sealed record AppSettings(ThemeKind Theme)
 }
 ```
 
-### `Application/Settings/ThemeKind.cs`
+### `src/Application/Settings/ThemeKind.cs`
 ```csharp
 namespace Sudoku.Application.Settings;
 /// <summary>Tema elegido por el jugador. La paleta concreta vive en WinForms.</summary>
@@ -391,7 +828,7 @@ public enum ThemeKind
 }
 ```
 
-### `Application/Statistics/DifficultyStatistics.cs`
+### `src/Application/Statistics/DifficultyStatistics.cs`
 ```csharp
 using System;
 using System.Collections.Generic;
@@ -412,7 +849,7 @@ public sealed record DifficultyStatistics(int Started, int Won, int Lost, TimeSp
 }
 ```
 
-### `Application/Statistics/GameOutcome.cs`
+### `src/Application/Statistics/GameOutcome.cs`
 ```csharp
 namespace Sudoku.Application.Statistics;
 /// <summary>Resultado de una partida terminada. Abandonar una partida cuenta como <see cref = "Lost"/>.</summary>
@@ -423,7 +860,7 @@ public enum GameOutcome
 }
 ```
 
-### `Application/Statistics/GameRecord.cs`
+### `src/Application/Statistics/GameRecord.cs`
 ```csharp
 using Domain;
 
@@ -432,7 +869,7 @@ namespace Sudoku.Application.Statistics;
 public sealed record GameRecord(Difficulty Difficulty, GameOutcome Outcome, TimeSpan Elapsed, DateTimeOffset FinishedAt);
 ```
 
-### `Application/Statistics/GameStatistics.cs`
+### `src/Application/Statistics/GameStatistics.cs`
 ```csharp
 using Domain;
 using System.Collections.Immutable;
@@ -453,7 +890,7 @@ public sealed record GameStatistics(ImmutableDictionary<Difficulty, DifficultySt
 }
 ```
 
-### `Application/UseCases/ApplyHint.cs`
+### `src/Application/UseCases/ApplyHint.cs`
 ```csharp
 using Domain;
 using global::Sudoku.Application.Games;
@@ -471,7 +908,7 @@ public sealed class ApplyHint(GetHint getHint, PlaceValue placeValue)
 }
 ```
 
-### `Application/UseCases/ChangeTheme.cs`
+### `src/Application/UseCases/ChangeTheme.cs`
 ```csharp
 using Sudoku.Application.Ports;
 using Sudoku.Application.Settings;
@@ -484,7 +921,7 @@ public sealed class ChangeTheme(ISettingsRepository repository)
 }
 ```
 
-### `Application/UseCases/ClearCell.cs`
+### `src/Application/UseCases/ClearCell.cs`
 ```csharp
 using Domain;
 using global::Sudoku.Application.Games;
@@ -497,7 +934,7 @@ public sealed class ClearCell
 }
 ```
 
-### `Application/UseCases/GetHint.cs`
+### `src/Application/UseCases/GetHint.cs`
 ```csharp
 using Sudoku.Application.Ports;
 using Domain;
@@ -518,7 +955,7 @@ public sealed class GetHint(ISolver solver)
 }
 ```
 
-### `Application/UseCases/GetSettings.cs`
+### `src/Application/UseCases/GetSettings.cs`
 ```csharp
 using Sudoku.Application.Games;
 using Sudoku.Application.Ports;
@@ -533,7 +970,7 @@ public sealed class GetSettings(ISettingsRepository repository)
 }
 ```
 
-### `Application/UseCases/GetStatistics.cs`
+### `src/Application/UseCases/GetStatistics.cs`
 ```csharp
 using Sudoku.Application.Games;
 using Sudoku.Application.Ports;
@@ -548,7 +985,7 @@ public sealed class GetStatistics(IStatisticsRepository repository)
 }
 ```
 
-### `Application/UseCases/Hint.cs`
+### `src/Application/UseCases/Hint.cs`
 ```csharp
 using Domain;
 
@@ -557,7 +994,7 @@ namespace Sudoku.Application.UseCases;
 public readonly record struct Hint(Position Position, int Value);
 ```
 
-### `Application/UseCases/LoadGame.cs`
+### `src/Application/UseCases/LoadGame.cs`
 ```csharp
 using global::Sudoku.Application.Games;
 using global::Sudoku.Application.Ports;
@@ -573,7 +1010,7 @@ public sealed class LoadGame(IGameRepository repository, IClock clock)
 }
 ```
 
-### `Application/UseCases/PlaceValue.cs`
+### `src/Application/UseCases/PlaceValue.cs`
 ```csharp
 using Domain;
 using global::Sudoku.Application.Games;
@@ -590,7 +1027,7 @@ public sealed class PlaceValue
 }
 ```
 
-### `Application/UseCases/RecordGameFinished.cs`
+### `src/Application/UseCases/RecordGameFinished.cs`
 ```csharp
 using Domain;
 using Sudoku.Application.Games;
@@ -608,7 +1045,7 @@ public sealed class RecordGameFinished(IStatisticsRepository repository, IClock 
 }
 ```
 
-### `Application/UseCases/RecordGameStarted.cs`
+### `src/Application/UseCases/RecordGameStarted.cs`
 ```csharp
 using Domain;
 using Sudoku.Application.Ports;
@@ -621,7 +1058,7 @@ public sealed class RecordGameStarted(IStatisticsRepository repository)
 }
 ```
 
-### `Application/UseCases/Redo.cs`
+### `src/Application/UseCases/Redo.cs`
 ```csharp
 using Sudoku.Application.Games;
 
@@ -632,7 +1069,7 @@ public sealed class Redo
 }
 ```
 
-### `Application/UseCases/SaveGame.cs`
+### `src/Application/UseCases/SaveGame.cs`
 ```csharp
 using global::Sudoku.Application.Games;
 using global::Sudoku.Application.Ports;
@@ -645,7 +1082,7 @@ public sealed class SaveGame(IGameRepository repository)
 }
 ```
 
-### `Application/UseCases/StartNewGame.cs`
+### `src/Application/UseCases/StartNewGame.cs`
 ```csharp
 using Domain;
 using Sudoku.Application.Games;
@@ -662,7 +1099,7 @@ public sealed class StartNewGame(IPuzzleGenerator generator, IClock clock)
 }
 ```
 
-### `Application/UseCases/ToggleNote.cs`
+### `src/Application/UseCases/ToggleNote.cs`
 ```csharp
 using Domain;
 using Sudoku.Application.Games;
@@ -675,7 +1112,7 @@ public sealed class ToggleNote
 }
 ```
 
-### `Application/UseCases/Undo.cs`
+### `src/Application/UseCases/Undo.cs`
 ```csharp
 using Sudoku.Application.Games;
 
@@ -686,7 +1123,7 @@ public sealed class Undo
 }
 ```
 
-### `Infrastructure/Generation/PuzzleGenerator.cs`
+### `src/Infrastructure/Generation/PuzzleGenerator.cs`
 ```csharp
 using Domain;
 using Sudoku.Application.Ports;
@@ -704,7 +1141,7 @@ public sealed class PuzzleGenerator(ISolver solver, Random? random = null) : IPu
 }
 ```
 
-### `Infrastructure/Persistence/AppDataPaths.cs`
+### `src/Infrastructure/Persistence/AppDataPaths.cs`
 ```csharp
 namespace Infrastructure.Persistence;
 /// <summary>Rutas bajo una carpeta raíz; por defecto <c>%AppData%\SudokuGame\</c>.</summary>
@@ -717,7 +1154,7 @@ public sealed class AppDataPaths(string root) : IAppDataPaths
 }
 ```
 
-### `Infrastructure/Persistence/AtomicFile.cs`
+### `src/Infrastructure/Persistence/AtomicFile.cs`
 ```csharp
 using System.Text;
 
@@ -729,7 +1166,7 @@ public static class AtomicFile
 }
 ```
 
-### `Infrastructure/Persistence/IAppDataPaths.cs`
+### `src/Infrastructure/Persistence/IAppDataPaths.cs`
 ```csharp
 namespace Infrastructure.Persistence;
 /// <summary>Única fuente de las rutas de archivos de la app. Permite usar una carpeta temporal en las pruebas.</summary>
@@ -746,7 +1183,7 @@ public interface IAppDataPaths
 }
 ```
 
-### `Infrastructure/Persistence/JsonFileStore.cs`
+### `src/Infrastructure/Persistence/JsonFileStore.cs`
 ```csharp
 using System.Text.Json;
 
@@ -767,7 +1204,7 @@ public static class JsonFileStore
 }
 ```
 
-### `Infrastructure/Persistence/JsonGameRepository.cs`
+### `src/Infrastructure/Persistence/JsonGameRepository.cs`
 ```csharp
 using System.Text.Json;
 using Sudoku.Application.Games;
@@ -786,7 +1223,7 @@ public sealed class JsonGameRepository(IAppDataPaths paths) : IGameRepository
 }
 ```
 
-### `Infrastructure/Persistence/JsonSettingsRepository.cs`
+### `src/Infrastructure/Persistence/JsonSettingsRepository.cs`
 ```csharp
 using Sudoku.Application.Games;
 using Sudoku.Application.Ports;
@@ -801,7 +1238,7 @@ public sealed class JsonSettingsRepository(IAppDataPaths paths) : ISettingsRepos
 }
 ```
 
-### `Infrastructure/Persistence/JsonStatisticsRepository.cs`
+### `src/Infrastructure/Persistence/JsonStatisticsRepository.cs`
 ```csharp
 using Sudoku.Application.Games;
 using Sudoku.Application.Ports;
@@ -819,7 +1256,7 @@ public sealed class JsonStatisticsRepository(IAppDataPaths paths) : IStatisticsR
 }
 ```
 
-### `Infrastructure/Solving/BacktrackingSolver.cs`
+### `src/Infrastructure/Solving/BacktrackingSolver.cs`
 ```csharp
 using Sudoku.Application.Ports;
 using Domain;
@@ -833,7 +1270,7 @@ public sealed class BacktrackingSolver : ISolver
 }
 ```
 
-### `Infrastructure/Time/SystemClock.cs`
+### `src/Infrastructure/Time/SystemClock.cs`
 ```csharp
 using Sudoku.Application.Ports;
 
@@ -844,7 +1281,152 @@ public sealed class SystemClock : IClock
 }
 ```
 
-### `Sudoku.WinForms/Theming/IThemeService.cs`
+### `src/Sudoku.WinForms/Presenters/BoardPresenter.cs`
+```csharp
+using System.Diagnostics.CodeAnalysis;
+using Domain;
+using Sudoku.Application.Games;
+using Sudoku.Application.UseCases;
+using Sudoku.WinForms.Controls.BoardControl;
+using Sudoku.WinForms.Views;
+
+namespace Sudoku.WinForms.Presenters;
+/// <summary>
+/// Traduce la interacción con el tablero (selección, valor, borrar) en casos de uso.
+/// Decide entre colocar valor y alternar nota según <see cref = "IBoardView.NotesMode"/>.
+/// Ignora la entrada si no hay sesión, no hay selección o la partida está en pausa.
+/// </summary>
+public sealed class BoardPresenter : IDisposable
+{
+    public BoardPresenter(IBoardView view, CurrentGame current, PlaceValue placeValue, ToggleNote toggleNote, ClearCell clearCell);
+    public void Dispose();
+}
+```
+
+### `src/Sudoku.WinForms/Presenters/CurrentGame.cs`
+```csharp
+using Sudoku.Application.Games;
+
+namespace Sudoku.WinForms.Presenters;
+/// <summary>Sesión activa compartida por los presenters. Solo se usa desde el hilo de UI.</summary>
+public sealed class CurrentGame
+{
+    public GameSession? Session { get; private set; }
+
+    public void Set(GameSession session);
+}
+```
+
+### `src/Sudoku.WinForms/Presenters/MainPresenter.cs`
+```csharp
+using Sudoku.Application.UseCases;
+using Sudoku.WinForms.Services;
+using Sudoku.WinForms.Views;
+
+namespace Sudoku.WinForms.Presenters;
+/// <summary>
+/// Coordina la ventana principal: nueva partida (generación en segundo plano, cancelable) y pausa.
+/// Solo se usa desde el hilo de UI.
+/// </summary>
+public sealed class MainPresenter : IDisposable
+{
+    public MainPresenter(IMainView view, StartNewGame startNewGame, CurrentGame current, IDialogService dialogs);
+    public void Dispose();
+    /// <summary>Genera una partida nueva. Si ya había una generación en curso, la cancela. No lanza excepciones.</summary>
+    public async Task StartNewGameAsync();
+}// Version anterior, antes de extraer IGameControlsView. Se mantiene para referencia histórica y pruebas.
+//public sealed class MainPresenter : IDisposable
+//{
+//    private readonly IMainView _view;
+//    private readonly StartNewGame _startNewGame;
+//    private readonly CurrentGame _current;
+//    private readonly IDialogService _dialogs;
+//    private CancellationTokenSource? _generation;
+//    public MainPresenter(IMainView view, StartNewGame startNewGame, CurrentGame current, IDialogService dialogs)
+//    {
+//        _view = view;
+//        _startNewGame = startNewGame;
+//        _current = current;
+//        _dialogs = dialogs;
+//        _view.NewGameRequested += OnNewGameRequested;
+//    }
+//    public void Dispose()
+//    {
+//        _view.NewGameRequested -= OnNewGameRequested;
+//        var generation = _generation;
+//        _generation = null;   // la continuación pendiente ya no toca la vista
+//        generation?.Cancel();
+//    }
+//    // Único async void: es un handler de evento. Todo el trabajo y los errores están en StartNewGameAsync.
+//    private async void OnNewGameRequested(object? sender, EventArgs e) => await StartNewGameAsync();
+//    /// <summary>Genera una partida nueva. Si ya había una generación en curso, la cancela. No lanza excepciones.</summary>
+//    public async Task StartNewGameAsync()
+//    {
+//        _generation?.Cancel();
+//        var cts = new CancellationTokenSource();
+//        _generation = cts;
+//        var difficulty = _view.SelectedDifficulty;
+//        _view.SetBusy(true);
+//        _view.SetStatus("Generando partida…");
+//        try
+//        {
+//            var session = await Task.Run(() => _startNewGame.Execute(difficulty, cts.Token), cts.Token);
+//            if (cts.IsCancellationRequested)
+//                return; // reemplazada por una petición más nueva (o presenter liberado)
+//            session.Start(); // las sesiones nacen en pausa; sin esto el tablero no acepta entrada
+//            _view.SetPaused(false);
+//            _current.Set(session);
+//            _view.SetBoard(session.Board);
+//            _view.SetDifficulty(session.Difficulty);
+//            _view.SetStatus("Partida nueva");
+//        }
+//        catch (OperationCanceledException)
+//        {
+//            if (ReferenceEquals(_generation, cts))
+//                _view.SetStatus("Generación cancelada");
+//        }
+//        catch (Exception ex)
+//        {
+//            if (ReferenceEquals(_generation, cts))
+//            {
+//                _view.SetStatus("No se pudo generar la partida");
+//                _dialogs.ShowError("Nueva partida", $"No se pudo generar la partida: {ex.Message}");
+//            }
+//        }
+//        finally
+//        {
+//            if (ReferenceEquals(_generation, cts))
+//            {
+//                _generation = null;
+//                _view.SetBusy(false);
+//            }
+//            cts.Dispose();
+//        }
+//    }
+//}
+
+```
+
+### `src/Sudoku.WinForms/Services/IDialogService.cs`
+```csharp
+namespace Sudoku.WinForms.Services;
+/// <summary>Puerto de diálogos: permite que los presenters muestren mensajes sin depender de WinForms.</summary>
+public interface IDialogService
+{
+    void ShowError(string title, string message);
+}
+```
+
+### `src/Sudoku.WinForms/Services/MessageBoxDialogService.cs`
+```csharp
+namespace Sudoku.WinForms.Services;
+public sealed class MessageBoxDialogService : IDialogService
+{
+    public void ShowError(string title, string message);
+}
+```
+
+### `src/Sudoku.WinForms/Theming/IThemeService.cs`
 ```csharp
 using Sudoku.Application.Settings;
 
@@ -865,7 +1447,7 @@ public interface IThemeService
 }
 ```
 
-### `Sudoku.WinForms/Theming/Palettes.cs`
+### `src/Sudoku.WinForms/Theming/Palettes.cs`
 ```csharp
 using Sudoku.Application.Settings;
 
@@ -880,7 +1462,7 @@ public static class Palettes
 }
 ```
 
-### `Sudoku.WinForms/Theming/Theme.cs`
+### `src/Sudoku.WinForms/Theming/Theme.cs`
 ```csharp
 using Sudoku.Application.Settings;
 
@@ -913,7 +1495,7 @@ public sealed record Theme
 }
 ```
 
-### `Sudoku.WinForms/Theming/ThemeApplier.cs`
+### `src/Sudoku.WinForms/Theming/ThemeApplier.cs`
 ```csharp
 namespace Sudoku.WinForms.Theming;
 /// <summary>
@@ -926,7 +1508,7 @@ public static class ThemeApplier
 }
 ```
 
-### `Sudoku.WinForms/Theming/ThemeService.cs`
+### `src/Sudoku.WinForms/Theming/ThemeService.cs`
 ```csharp
 using Sudoku.Application.Settings;
 using Sudoku.Application.UseCases;
@@ -942,24 +1524,41 @@ public sealed class ThemeService : IThemeService
 }
 ```
 
-### `Sudoku.WinForms/Views/IMainView.cs`
+### `src/Sudoku.WinForms/Views/IBoardView.cs`
+```csharp
+using Domain;
+using Sudoku.WinForms.Controls.BoardControl;
+
+namespace Sudoku.WinForms.Views;
+/// <summary>Contrato mínimo del tablero para su presenter. No expone controles WinForms.</summary>
+public interface IBoardView
+{
+    bool NotesMode { get; }
+
+    event EventHandler<SelectionChangedEventArgs>? SelectionChanged;
+    event EventHandler<ValueEnteredEventArgs>? ValueEntered;
+    event EventHandler? ClearRequested;
+    void SetBoard(Board board);
+}
+```
+
+### `src/Sudoku.WinForms/Views/IGameControlsView.cs`
 ```csharp
 using Domain;
 using Sudoku.Application.Settings;
-using Sudoku.WinForms.Controls.BoardControl;
 using Sudoku.WinForms.Theming;
 
 namespace Sudoku.WinForms.Views;
-/// <summary>Contrato de la vista principal. No expone controles WinForms.</summary>
-public interface IMainView
+/// <summary>Contrato de la barra lateral y los controles de juego. No expone controles WinForms.</summary>
+public interface IGameControlsView
 {
     Difficulty SelectedDifficulty { get; }
 
     ThemeKind SelectedTheme { get; }
 
-    bool NotesMode { get; }
-
     event EventHandler? NewGameRequested;
+    /// <summary>El usuario pidió cancelar la generación en curso (el botón de nueva partida hace de "Cancelar").</summary>
+    event EventHandler? CancelRequested;
     event EventHandler? DifficultyChanged;
     event EventHandler? UndoRequested;
     event EventHandler? RedoRequested;
@@ -969,22 +1568,56 @@ public interface IMainView
     event EventHandler? PauseRequested;
     event EventHandler? StatisticsRequested;
     event EventHandler? ThemeChangeRequested;
-    event EventHandler<SelectionChangedEventArgs>? SelectionChanged;
-    event EventHandler<ValueEnteredEventArgs>? ValueEntered;
-    event EventHandler? ClearRequested;
-    void SetBoard(Board board);
     void SetDifficulty(Difficulty difficulty);
     void SetElapsedTime(TimeSpan elapsedTime);
     void SetStatus(string message);
     void SetNotesMode(bool enabled);
     void SetPaused(bool paused);
+    /// <summary>Mientras está ocupada, "Nueva partida" pasa a "Cancelar" y el resto de acciones se deshabilita.</summary>
     void SetBusy(bool busy);
     void SetUndoRedoState(bool canUndo, bool canRedo);
     void SetTheme(Theme theme);
 }
 ```
 
-### `Sudoku.WinForms/Views/MainForm.cs`
+### `src/Sudoku.WinForms/Views/IMainView.cs`
+```csharp
+using Domain;
+using Sudoku.Application.Settings;
+using Sudoku.WinForms.Theming;
+
+namespace Sudoku.WinForms.Views;
+/// <summary>Vista principal: composición del tablero y los controles de juego. Solo la usa MainPresenter.</summary>
+public interface IMainView : IBoardView, IGameControlsView
+{
+}// Antes de extraer IGameControlsView, IMainView era así:
+//public interface IMainView : IBoardView
+//{
+//    Difficulty SelectedDifficulty { get; }
+//    ThemeKind SelectedTheme { get; }
+//    event EventHandler? NewGameRequested;
+//    event EventHandler? DifficultyChanged;
+//    event EventHandler? UndoRequested;
+//    event EventHandler? RedoRequested;
+//    event EventHandler? NotesModeChanged;
+//    event EventHandler? HintRequested;
+//    event EventHandler? SolveRequested;
+//    event EventHandler? PauseRequested;
+//    event EventHandler? StatisticsRequested;
+//    event EventHandler? ThemeChangeRequested;
+//    void SetDifficulty(Difficulty difficulty);
+//    void SetElapsedTime(TimeSpan elapsedTime);
+//    void SetStatus(string message);
+//    void SetNotesMode(bool enabled);
+//    void SetPaused(bool paused);
+//    void SetBusy(bool busy);
+//    void SetUndoRedoState(bool canUndo, bool canRedo);
+//    void SetTheme(Theme theme);
+//}
+
+```
+
+### `src/Sudoku.WinForms/Views/MainForm.cs`
 ```csharp
 using Domain;
 using Sudoku.Application.Settings;
@@ -1010,6 +1643,7 @@ public sealed class MainForm : Form, IMainView
     public event EventHandler? PauseRequested;
     public event EventHandler? StatisticsRequested;
     public event EventHandler? ThemeChangeRequested;
+    public event EventHandler? CancelRequested;
     public event EventHandler<SelectionChangedEventArgs>? SelectionChanged;
     public event EventHandler<ValueEnteredEventArgs>? ValueEntered;
     public event EventHandler? ClearRequested;
@@ -1025,7 +1659,581 @@ public sealed class MainForm : Form, IMainView
 }
 ```
 
-### `Sudoku.WinForms/Controls/BoardControl/BoardControl.cs`
+### `tests/Application.Tests.Unit/Games/GameSessionTimerTests.cs`
+```csharp
+using Domain;
+using Sudoku.Application.Games;
+using Sudoku.Application.Tests.TestDoubles;
+using Application.Tests.Unit.TestData;
+using Xunit;
+
+namespace Application.Tests.Games;
+public sealed class GameSessionTimerTests
+{
+    [Fact]
+    public void NewSession_StartsPausedAtZero();
+    [Fact]
+    public void ElapsedTime_DoesNotGrowWhilePaused();
+    [Fact]
+    public void Start_CountsElapsedTime();
+    [Fact]
+    public void Pause_StopsCounting();
+    [Fact]
+    public void Start_WhenAlreadyRunning_DoesNotResetTheLeg();
+    [Fact]
+    public void Pause_WhenAlreadyPaused_KeepsTheAccumulatedTime();
+    [Fact]
+    public void Resume_AccumulatesBothLegs();
+    [Fact]
+    public void Restore_KeepsBoardDifficultyAndElapsed_PausedWithEmptyHistory();
+    [Fact]
+    public void Restore_ThenStart_ContinuesFromSavedTime();
+    [Fact]
+    public void Restore_WithNull_Throws();
+}
+```
+
+### `tests/Application.Tests.Unit/Puzzles/DifficultyProfileTests.cs`
+```csharp
+using Domain;
+using Sudoku.Application.Puzzles;
+
+namespace Application.Tests.Unit.Puzzles;
+public class DifficultyProfileTests
+{
+    public static TheoryData<Difficulty> AllDifficulties => new(Enum.GetValues<Difficulty>());
+
+    [Theory]
+    [MemberData(nameof(AllDifficulties))]
+    public void For_ReturnsProfileWithValidRange(Difficulty difficulty);
+    [Fact]
+    public void For_HarderDifficultyHasFewerGivens_WithoutOverlap();
+    [Fact]
+    public void For_UndefinedDifficulty_Throws();
+}
+```
+
+### `tests/Application.Tests.Unit/Statistics/DifficultyStatisticsTests.cs`
+```csharp
+using Sudoku.Application.Statistics;
+
+namespace Application.Tests.Unit.Statistics;
+public class DifficultyStatisticsTests
+{
+    [Fact]
+    public void Empty_has_no_games_and_no_times();
+    [Fact]
+    public void WithStarted_increments_started_only();
+    [Fact]
+    public void Won_updates_count_total_and_best_time();
+    [Fact]
+    public void Won_keeps_best_time_when_new_one_is_slower_and_replaces_it_when_faster();
+    [Fact]
+    public void Lost_increments_lost_without_touching_times();
+    [Fact]
+    public void AverageWonTime_is_total_divided_by_wins();
+}
+```
+
+### `tests/Application.Tests.Unit/Statistics/GameStatisticsTests.cs`
+```csharp
+using Domain;
+using Sudoku.Application.Statistics;
+
+namespace Application.Tests.Unit.Statistics;
+public class GameStatisticsTests
+{
+    [Fact]
+    public void For_returns_empty_statistics_for_a_difficulty_never_played();
+    [Fact]
+    public void WithGameStarted_only_affects_that_difficulty();
+    [Fact]
+    public void WithGameFinished_updates_aggregates_and_recent_list();
+    [Fact]
+    public void Recent_lists_newest_first_and_is_capped();
+}
+```
+
+### `tests/Application.Tests.Unit/TestDoubles/InMemoryGameRepository.cs`
+```csharp
+using Sudoku.Application.Games;
+using Sudoku.Application.Ports;
+
+namespace Sudoku.Application.Tests.TestDoubles;
+public sealed class InMemoryGameRepository : IGameRepository
+{
+    public SavedGame? Stored { get; set; }
+    /// <summary>Si se asigna, <see cref = "Load"/> la lanza (simula un guardado dañado).</summary>
+    public Exception? LoadFailure { get; set; }
+
+    public void Save(SavedGame game);
+    public SavedGame? Load();
+    public void Delete();
+}
+```
+
+### `tests/Application.Tests.Unit/UseCases/ChangeThemeTests.cs`
+```csharp
+using Application.Tests.Unit.TestData;
+using Sudoku.Application.Settings;
+using Sudoku.Application.UseCases;
+
+namespace Application.Tests.Unit.UseCases;
+public class ChangeThemeTests
+{
+    [Fact]
+    public void Saves_the_new_theme_and_returns_true();
+    [Fact]
+    public void Returns_false_and_does_not_save_when_the_theme_is_already_selected();
+    [Fact]
+    public void Rejects_a_theme_value_that_is_not_defined();
+}
+```
+
+### `tests/Application.Tests.Unit/UseCases/GetHintTests.cs`
+```csharp
+using Sudoku.Application.UseCases;
+using Domain;
+
+namespace Application.Tests.UseCases;
+public sealed class GetHintTests
+{
+    [Fact]
+    public void Execute_PreferredCellIsEmpty_ReturnsSolutionValueForThatCell();
+    [Fact]
+    public void Execute_NoPreferredCell_ReturnsFirstEmptyCell();
+    [Fact]
+    public void Execute_PreferredCellIsFilled_FallsBackToFirstEmptyCell();
+    [Fact]
+    public void Execute_BoardWithoutEmptyCells_ReturnsNullAndDoesNotCallSolver();
+    [Fact]
+    public void Execute_SendsOnlyTheGivensToTheSolver();
+    [Fact]
+    public void Execute_GivensWithoutSolution_Throws();
+    [Fact]
+    public void Execute_NullBoard_Throws();
+}
+```
+
+### `tests/Application.Tests.Unit/UseCases/GetSettingsTests.cs`
+```csharp
+using Application.Tests.Unit.TestData;
+using Sudoku.Application.Settings;
+using Sudoku.Application.UseCases;
+
+namespace Application.Tests.Unit.UseCases;
+public class GetSettingsTests
+{
+    [Fact]
+    public void Returns_default_settings_when_nothing_is_saved();
+    [Fact]
+    public void Returns_the_saved_settings();
+}
+```
+
+### `tests/Application.Tests.Unit/UseCases/GetStatisticsTests.cs`
+```csharp
+using Application.Tests.Unit.TestData;
+using Domain;
+using Sudoku.Application.Statistics;
+using Sudoku.Application.UseCases;
+using Xunit;
+
+namespace Application.Tests.Unit.UseCases;
+public class GetStatisticsTests
+{
+    [Fact]
+    public void Returns_empty_statistics_when_nothing_is_saved();
+    [Fact]
+    public void Returns_what_the_repository_holds();
+}
+```
+
+### `tests/Application.Tests.Unit/UseCases/LoadGameTests.cs`
+```csharp
+using Domain;
+using Sudoku.Application.Games;
+using Sudoku.Application.Tests.TestDoubles;
+using Sudoku.Application.UseCases;
+using Xunit;
+using Application.Tests.Unit.TestData;
+
+namespace Sudoku.Application.Tests.UseCases;
+public sealed class LoadGameTests
+{
+    [Fact]
+    public void Execute_WithoutSavedGame_ReturnsNull();
+    [Fact]
+    public void Execute_WithSavedGame_ReturnsPausedSessionWithoutHistory();
+    [Fact]
+    public void Execute_WithCorruptSave_PropagatesTheException();
+    [Fact]
+    public void SaveThenLoad_ReturnsEquivalentSession();
+}
+```
+
+### `tests/Application.Tests.Unit/UseCases/RecordGameFinishedTests.cs`
+```csharp
+using Application.Tests.Unit.TestData;
+using Domain;
+using Sudoku.Application.Games;
+using Sudoku.Application.Puzzles;
+using Sudoku.Application.Statistics;
+using Sudoku.Application.UseCases;
+
+namespace Application.Tests.Unit.UseCases;
+public class RecordGameFinishedTests
+{
+    [Fact]
+    public void Won_records_elapsed_time_difficulty_and_finish_moment();
+    [Fact]
+    public void Lost_is_recorded_for_an_unfinished_board();
+    [Fact]
+    public void Won_with_an_unsolved_board_throws_and_saves_nothing();
+}
+```
+
+### `tests/Application.Tests.Unit/UseCases/RecordGameStartedTests.cs`
+```csharp
+using Application.Tests.Unit.TestData;
+using Domain;
+using Sudoku.Application.UseCases;
+using Xunit;
+
+namespace Application.Tests.Unit.UseCases;
+public class RecordGameStartedTests
+{
+    [Fact]
+    public void Increments_started_for_the_given_difficulty_and_persists();
+}
+```
+
+### `tests/Application.Tests.Unit/UseCases/SaveGameTests.cs`
+```csharp
+using Domain;
+using Sudoku.Application.Games;
+using Sudoku.Application.Tests.TestDoubles;
+using Sudoku.Application.UseCases;
+using Xunit;
+using Application.Tests.Unit.TestData;
+
+namespace Sudoku.Application.Tests.UseCases;
+public sealed class SaveGameTests
+{
+    [Fact]
+    public void Execute_SavesBoardDifficultyAndElapsedTime();
+    [Fact]
+    public void Execute_DoesNotPauseOrChangeTheSession();
+    [Fact]
+    public void Execute_WithNullSession_Throws();
+}
+```
+
+### `tests/Infrastructure.Tests.Unit/Generarion/PuzzleGeneratorTests.cs`
+```csharp
+using Domain;
+using global::Infrastructure.Generation;
+using global::Infrastructure.Solving;
+using Sudoku.Application.Ports;
+using Sudoku.Application.Puzzles;
+
+namespace Application.Tests.Unit.Generarion;
+public class PuzzleGeneratorTests
+{
+    public static TheoryData<Difficulty> AllDifficulties => new(Enum.GetValues<Difficulty>());
+
+    [Fact]
+    public void Constructor_NullSolver_Throws();
+    [Theory]
+    [MemberData(nameof(AllDifficulties))]
+    public void Generate_HasUniqueSolution(Difficulty difficulty);
+    [Theory]
+    [MemberData(nameof(AllDifficulties))]
+    public void Generate_GivensCountIsWithinProfileRange(Difficulty difficulty);
+    [Fact]
+    public void Generate_EveryFilledCellIsGiven_AndNoNotes();
+    [Fact]
+    public void Generate_SolutionIsSolved_AndConsistentWithGivens();
+    [Fact]
+    public void Generate_SameSeed_ProducesSamePuzzle();
+    [Fact]
+    public void Generate_DifferentSeeds_ProduceDifferentPuzzles();
+    [Fact]
+    public void Generate_CancelledToken_Throws();
+    [Fact]
+    public void Generate_WhenNoCellCanBeRemoved_ThrowsAfterMaxAttempts();
+}
+```
+
+### `tests/Infrastructure.Tests.Unit/Persistence/AtomicFileTests.cs`
+```csharp
+using Infrastructure.Persistence;
+using Xunit;
+
+namespace Infrastructure.Tests.Persistence;
+public sealed class AtomicFileTests : IDisposable
+{
+    public void Dispose();
+    [Fact]
+    public void WriteAllText_CreatesMissingDirectories();
+    [Fact]
+    public void WriteAllText_ReplacesExistingContent();
+    [Fact]
+    public void WriteAllText_LeavesNoTemporaryFiles();
+    [Fact]
+    public void WriteAllText_WritesUtf8WithoutBom();
+}
+```
+
+### `tests/Infrastructure.Tests.Unit/Persistence/JsonGameRepositoryTests.cs`
+```csharp
+using System.Globalization;
+using Domain;
+using Infrastructure.Persistence;
+using Sudoku.Application.Games;
+using Xunit;
+
+namespace Infrastructure.Tests.Persistence;
+public sealed class JsonGameRepositoryTests : IDisposable
+{
+    public JsonGameRepositoryTests();
+    public void Dispose();
+    [Fact]
+    public void Load_WithoutFile_ReturnsNull();
+    [Fact]
+    public void SaveThenLoad_RoundTripsBoardDifficultyAndElapsed();
+    [Fact]
+    public void SaveThenLoad_PreservesGivensPlayerValuesAndNotes();
+    [Theory]
+    [InlineData(Difficulty.Easy)]
+    [InlineData(Difficulty.Medium)]
+    [InlineData(Difficulty.Hard)]
+    [InlineData(Difficulty.Expert)]
+    public void SaveThenLoad_RoundTripsEveryDifficulty(Difficulty difficulty);
+    [Fact]
+    public void Save_WritesToCurrentGamePath();
+    [Fact]
+    public void Save_Twice_KeepsOnlyTheLastGameAndNoTemporaryFiles();
+    [Fact]
+    public void Delete_RemovesTheSavedGame();
+    [Fact]
+    public void Delete_WithoutFile_DoesNotThrow();
+    [Fact]
+    public void Delete_WithDirectoryButWithoutFile_DoesNotThrow();
+    [Fact]
+    public void Load_ValidHandWrittenJson_Works();
+    [Theory]
+    [InlineData("{ not json")]
+    [InlineData("")]
+    [InlineData("null")]
+    [InlineData("[]")]
+    [InlineData("{}")]
+    public void Load_UnreadableOrIncompleteJson_ThrowsCorruptSaveException(string content);
+    [Fact]
+    public void Load_UnknownVersion_ThrowsCorruptSaveException();
+    [Theory]
+    [InlineData("Nightmare")]
+    [InlineData("99")]
+    [InlineData("")]
+    public void Load_UnknownDifficulty_ThrowsCorruptSaveException(string difficulty);
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(double.MaxValue)]
+    public void Load_InvalidElapsed_ThrowsCorruptSaveException(double elapsed);
+    [Fact]
+    public void Load_WrongBoardLength_ThrowsCorruptSaveException();
+    [Fact]
+    public void Load_ValueContradictingAGiven_ThrowsCorruptSaveException();
+    [Fact]
+    public void Load_NonDigitValue_ThrowsCorruptSaveException();
+    [Fact]
+    public void Load_NotesOnAFilledCell_ThrowsCorruptSaveException();
+    [Fact]
+    public void Load_NotesMaskOutOfRange_ThrowsCorruptSaveException();
+    [Fact]
+    public void Load_CorruptFile_IsLeftUntouched();
+    [Fact]
+    public void Save_AfterCorruptFile_ReplacesItWithAValidGame();
+}
+```
+
+### `tests/Infrastructure.Tests.Unit/Persistence/JsonSettingsRepositoryTests.cs`
+```csharp
+using global::Infrastructure.Persistence;
+using global::Infrastructure.Tests.Unit.TestSupport;
+using Sudoku.Application.Games;
+using Sudoku.Application.Settings;
+
+namespace Infrastructure.Tests.Unit.Persistence;
+public sealed class JsonSettingsRepositoryTests : IDisposable
+{
+    public JsonSettingsRepositoryTests();
+    public void Dispose();
+    [Fact]
+    public void Load_returns_default_settings_when_the_file_does_not_exist();
+    [Theory]
+    [InlineData(ThemeKind.Light)]
+    [InlineData(ThemeKind.Dark)]
+    public void Save_then_Load_round_trips_the_theme(ThemeKind theme);
+    [Fact]
+    public void Load_throws_CorruptSaveException_for_invalid_json_and_leaves_the_file_untouched();
+    [Fact]
+    public void Load_throws_CorruptSaveException_for_an_unknown_version();
+    [Fact]
+    public void Load_throws_CorruptSaveException_for_an_unknown_theme_name();
+}
+```
+
+### `tests/Infrastructure.Tests.Unit/Persistence/JsonStatisticsRepositoryTests.cs`
+```csharp
+using Domain;
+using global::Infrastructure.Persistence;
+using global::Infrastructure.Tests.Unit.TestSupport;
+using Sudoku.Application.Games;
+using Sudoku.Application.Statistics;
+
+namespace Infrastructure.Tests.Unit.Persistence;
+public sealed class JsonStatisticsRepositoryTests : IDisposable
+{
+    public JsonStatisticsRepositoryTests();
+    public void Dispose();
+    [Fact]
+    public void Load_returns_empty_statistics_when_the_file_does_not_exist();
+    [Fact]
+    public void Save_then_Load_round_trips_aggregates_and_recent_games();
+    [Fact]
+    public void Load_throws_CorruptSaveException_for_invalid_json_and_leaves_the_file_untouched();
+    [Fact]
+    public void Load_throws_CorruptSaveException_for_an_unknown_version();
+    [Fact]
+    public void Load_throws_CorruptSaveException_for_an_unknown_difficulty_name();
+}
+```
+
+### `tests/Infrastructure.Tests.Unit/Solving/BacktrackingSolverTests.cs`
+```csharp
+using Domain;
+using Infrastructure.Solving;
+
+namespace Infrastructure.Tests.Solving;
+public sealed class BacktrackingSolverTests
+{
+    [Fact]
+    public void Solve_EasyPuzzle_ReturnsKnownSolution();
+    [Fact]
+    public void Solve_HardPuzzle_ReturnsSolutionValidAccordingToRules();
+    [Fact]
+    public void Solve_KeepsGivenFlagsAndMarksSolvedCellsAsPlayerValues();
+    [Fact]
+    public void Solve_KeepsExistingPlayerValues();
+    [Fact]
+    public void Solve_EmptyBoard_ReturnsValidSolution();
+    [Fact]
+    public void Solve_AlreadySolvedBoard_ReturnsEqualBoard();
+    [Fact]
+    public void Solve_ConflictingGivens_ReturnsNull();
+    [Fact]
+    public void Solve_CellWithoutCandidates_ReturnsNull();
+    [Fact]
+    public void Solve_NullBoard_Throws();
+    [Theory]
+    [InlineData(TestPuzzles.Easy)]
+    [InlineData(TestPuzzles.Hard)]
+    public void CountSolutions_UniquePuzzle_ReturnsOne(string puzzle);
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(5)]
+    public void CountSolutions_EmptyBoard_StopsAtLimit(int limit);
+    [Fact]
+    public void CountSolutions_ConflictingGivens_ReturnsZero();
+    [Fact]
+    public void CountSolutions_CellWithoutCandidates_ReturnsZero();
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void CountSolutions_LimitBelowOne_Throws(int limit);
+}
+```
+
+### `tests/Sudoku.WinForms.Tests/Theming/PalettesTests.cs`
+```csharp
+using Sudoku.Application.Settings;
+using Sudoku.WinForms.Theming;
+
+namespace Sudoku.WinForms.Tests.Theming;
+public class PalettesTests
+{
+    [Theory]
+    [InlineData(ThemeKind.Light)]
+    [InlineData(ThemeKind.Dark)]
+    public void For_ReturnsPaletteOfRequestedKind(ThemeKind kind);
+    [Fact]
+    public void For_UnknownKind_Throws();
+    [Fact]
+    public void LightAndDark_AreDifferentPalettes();
+    [Theory]
+    [InlineData(ThemeKind.Light)]
+    [InlineData(ThemeKind.Dark)]
+    public void EveryColor_IsDefinedAndOpaque(ThemeKind kind);
+    [Theory]
+    [InlineData(ThemeKind.Light)]
+    [InlineData(ThemeKind.Dark)]
+    public void HighlightColors_AreDistinguishable(ThemeKind kind);
+    [Theory]
+    [InlineData(ThemeKind.Light)]
+    [InlineData(ThemeKind.Dark)]
+    public void BoardTexts_AreReadableOnBoardBackground(ThemeKind kind);
+    [Theory]
+    [InlineData(ThemeKind.Light)]
+    [InlineData(ThemeKind.Dark)]
+    public void WindowText_IsReadableOnWindowBackground(ThemeKind kind);
+}
+```
+
+### `tests/Sudoku.WinForms.Tests/Theming/ThemeApplierTests.cs`
+```csharp
+using Sudoku.WinForms.Theming;
+
+namespace Sudoku.WinForms.Tests.Theming;
+public class ThemeApplierTests
+{
+    [Fact]
+    public void Apply_PaintsControlsRecursivelyWithTheme();
+    [Fact]
+    public void Apply_SwitchingThemes_RepaintsControls();
+    [Fact]
+    public void Apply_NullArguments_Throw();
+}
+```
+
+### `tests/Sudoku.WinForms.Tests/Theming/ThemeServiceTests.cs`
+```csharp
+using Sudoku.Application.Games;
+using Sudoku.Application.Settings;
+using Sudoku.Application.UseCases;
+using Sudoku.WinForms.Tests.TestDoubles;
+using Sudoku.WinForms.Theming;
+
+namespace Sudoku.WinForms.Tests.Theming;
+public class ThemeServiceTests
+{
+    [Theory]
+    [InlineData(ThemeKind.Light)]
+    [InlineData(ThemeKind.Dark)]
+    public void Constructor_ExposesInitialTheme(ThemeKind initial);
+    [Fact]
+    public void SetTheme_Different_PersistsChangesCurrentAndRaisesEventOnce();
+    [Fact]
+    public void SetTheme_EventHandlerSeesNewTheme();
+    [Fact]
+    public void SetTheme_Same_DoesNothing();
+    [Fact]
+    public void SetTheme_WhenSettingsAreCorrupt_PropagatesAndKeepsCurrentTheme();
+}
+```
+
+### `src/Sudoku.WinForms/Controls/BoardControl/BoardControl.cs`
 ```csharp
 using Domain;
 using Sudoku.WinForms.Theming;
@@ -1085,7 +2293,7 @@ public sealed class BoardControl : Control
 }
 ```
 
-### `Sudoku.WinForms/Controls/BoardControl/BoardGeometry.cs`
+### `src/Sudoku.WinForms/Controls/BoardControl/BoardGeometry.cs`
 ```csharp
 using Domain;
 
@@ -1114,7 +2322,7 @@ public readonly struct BoardGeometry
 }
 ```
 
-### `Sudoku.WinForms/Controls/BoardControl/SelectionChangedEventArgs.cs`
+### `src/Sudoku.WinForms/Controls/BoardControl/SelectionChangedEventArgs.cs`
 ```csharp
 using Domain;
 
@@ -1125,12 +2333,119 @@ public sealed class SelectionChangedEventArgs(Position position) : EventArgs
 }
 ```
 
-### `Sudoku.WinForms/Controls/BoardControl/ValueEnteredEventArgs.cs`
+### `src/Sudoku.WinForms/Controls/BoardControl/ValueEnteredEventArgs.cs`
 ```csharp
 namespace Sudoku.WinForms.Controls.BoardControl;
 public sealed class ValueEnteredEventArgs(int value) : EventArgs
 {
     public int Value { get; }
+}
+```
+
+### `tests/Sudoku.WinForms.Tests/Controls/Board/BoardGeometryTests.cs`
+```csharp
+using Domain;
+using Sudoku.WinForms.Controls.BoardControl;
+
+namespace Sudoku.WinForms.Tests.Controls.BoardControl;
+public sealed class BoardGeometryTests
+{
+    [Fact]
+    public void Create_WhenWidthIsGreaterThanHeight_CentersSquareBoard();
+    [Fact]
+    public void Create_WhenHeightIsGreaterThanWidth_CentersSquareBoard();
+    [Fact]
+    public void Create_WhenAvailableSizeIsEmpty_ReturnsDefaultGeometry();
+    [Fact]
+    public void GetCellBounds_ReturnsCorrectCellRectangle();
+    [Fact]
+    public void HitTest_WhenPointIsInsideCell_ReturnsItsPosition();
+    [Fact]
+    public void HitTest_WhenPointIsOnTopLeftBoundary_ReturnsFirstCell();
+    [Fact]
+    public void HitTest_WhenPointIsOnRightBoundary_ReturnsNull();
+    [Fact]
+    public void HitTest_WhenPointIsOnBottomBoundary_ReturnsNull();
+    [Fact]
+    public void HitTest_WhenPointIsOutsideBoard_ReturnsNull();
+    [Fact]
+    public void HitTest_WhenGeometryIsNotInitialized_ReturnsNull();
+}
+```
+
+### `tests/Sudoku.WinForms.Tests/Presenters/TestDoubles/BoardPresenterTests.cs`
+```csharp
+using Sudoku.Application.Games;
+using Sudoku.Application.UseCases;
+using Sudoku.WinForms.Presenters;
+using Sudoku.WinForms.Tests.Presenters.TestDoubles;
+
+namespace Sudoku.WinForms.Tests.Presenters;
+public sealed class BoardPresenterTests : IDisposable
+{
+    public BoardPresenterTests();
+    public void Dispose();
+    [Fact]
+    public void ValueEntered_PlacesValueInSelectedCell_AndRefreshesView();
+    [Fact]
+    public void ValueEntered_InNotesMode_TogglesNoteInsteadOfPlacingValue();
+    [Fact]
+    public void ValueEntered_WithoutSelection_DoesNothing();
+    [Fact]
+    public void ValueEntered_WhenPaused_IsIgnored();
+    [Fact]
+    public void ValueEntered_OnGivenCell_DoesNotRefreshView();
+    [Fact]
+    public void ClearRequested_RemovesPlayerValue();
+    [Fact]
+    public void Events_WithoutActiveSession_AreIgnored();
+    [Fact]
+    public void AfterDispose_EventsAreIgnored();
+}
+```
+
+### `tests/Sudoku.WinForms.Tests/Presenters/TestDoubles/MainPresenterTests.cs`
+```csharp
+using Domain;
+using Sudoku.Application.Games;
+using Sudoku.Application.Ports;
+using Sudoku.Application.Puzzles;
+using Sudoku.Application.UseCases;
+using Sudoku.WinForms.Presenters;
+using Sudoku.WinForms.Services;
+using Sudoku.WinForms.Tests.Presenters.TestDoubles;
+
+namespace Sudoku.WinForms.Tests.Presenters;
+public sealed class MainPresenterTests
+{
+    [Fact]
+    public async Task StartNewGame_StoresRunningSession_AndShowsBoard();
+    [Fact]
+    public async Task StartNewGame_UsesSelectedDifficulty();
+    [Fact]
+    public async Task StartNewGame_WhenGeneratorFails_ShowsErrorAndKeepsNoSession();
+    [Fact]
+    public async Task StartNewGame_WhenCalledAgain_CancelsPreviousGeneration();
+    [Fact]
+    public async Task StartNewGame_TellsViewTheGameIsNotPaused();
+    [Fact]
+    public async Task NewGameRequested_Event_StartsGeneration();
+    [Fact]
+    public void AfterDispose_NewGameRequested_IsIgnored();
+    [Fact]
+    public async Task CancelRequested_WhileGenerating_ClearsBusyWithoutShowingError();
+    [Fact]
+    public void CancelRequested_WithoutGeneration_DoesNothing();
+    [Fact]
+    public void PauseRequested_RunningSession_PausesAndNotifiesView();
+    [Fact]
+    public void PauseRequested_PausedSession_ResumesAndNotifiesView();
+    [Fact]
+    public void PauseRequested_WithoutSession_IsIgnored();
+    [Fact]
+    public async Task PauseRequested_WhileGenerating_IsIgnored();
+    [Fact]
+    public void AfterDispose_PauseAndCancel_AreIgnored();
 }
 ```
 
