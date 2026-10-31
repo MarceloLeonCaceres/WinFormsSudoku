@@ -129,52 +129,40 @@ public sealed class BoardControl : Control
         if (position is not null)
             SelectedPosition = position;
     }
-
+    protected override bool IsInputKey(Keys keyData) =>
+    (keyData & Keys.KeyCode) switch
+    {
+        Keys.Left or Keys.Right or Keys.Up or Keys.Down => true,
+        _ => base.IsInputKey(keyData)
+    };
     protected override void OnKeyDown(KeyEventArgs e)
     {
         base.OnKeyDown(e);
 
-        if (_selectedPosition is not { } selected)
+        if (_selectedPosition is not { } selected || e.Modifiers != Keys.None)
             return;
 
+        var handled = true;
         switch (e.KeyCode)
         {
-            case Keys.Left:
-                MoveSelection(selected.Row, selected.Column - 1);
-                HandleKey(e);
-                return;
-
-            case Keys.Right:
-                MoveSelection(selected.Row, selected.Column + 1);
-                HandleKey(e);
-                return;
-
-            case Keys.Up:
-                MoveSelection(selected.Row - 1, selected.Column);
-                HandleKey(e);
-                return;
-
-            case Keys.Down:
-                MoveSelection(selected.Row + 1, selected.Column);
-                HandleKey(e);
-                return;
-
+            case Keys.Left: MoveSelection(selected.Row, selected.Column - 1); break;
+            case Keys.Right: MoveSelection(selected.Row, selected.Column + 1); break;
+            case Keys.Up: MoveSelection(selected.Row - 1, selected.Column); break;
+            case Keys.Down: MoveSelection(selected.Row + 1, selected.Column); break;
             case Keys.Delete:
-            case Keys.Back:
-                ClearRequested?.Invoke(this, EventArgs.Empty);
-                HandleKey(e);
-                return;
+            case Keys.Back: ClearRequested?.Invoke(this, EventArgs.Empty); break;
+            default:
+                if (GetEnteredValue(e.KeyCode) is { } value)
+                    ValueEntered?.Invoke(this, new ValueEnteredEventArgs(value));
+                else
+                    handled = false;
+                break;
         }
 
-        var value = GetEnteredValue(e.KeyCode);
-
-        if (value is not null)
+        if (handled)
         {
-            ValueEntered?.Invoke(
-                this,
-                new ValueEnteredEventArgs(value.Value));
-
-            HandleKey(e);
+            e.Handled = true;
+            e.SuppressKeyPress = true;
         }
     }
 
