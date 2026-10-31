@@ -58,7 +58,10 @@ public sealed class BoardPresenter : IDisposable
             : _placeValue.Execute(session, position, e.Value);
 
         if (changed)
+        {
             _view.SetBoard(session.Board);
+            _current.NotifyBoardChanged();
+        }
     }
 
     private void OnClearRequested(object? sender, EventArgs e)
@@ -67,7 +70,10 @@ public sealed class BoardPresenter : IDisposable
             return;
 
         if (_clearCell.Execute(session, position))
+        {
             _view.SetBoard(session.Board);
+            _current.NotifyBoardChanged();
+        }
     }
 
     private bool TryGetTarget([NotNullWhen(true)] out GameSession? session, out Position position)

@@ -40,7 +40,6 @@ internal static class CompositionRoot
 
     private static void AddUseCases(IServiceCollection services)
     {
-        // Sin estado: singleton. (SolveGame se añade cuando confirmes que existe.)
         services.AddSingleton<StartNewGame>();
         services.AddSingleton<PlaceValue>();
         services.AddSingleton<ClearCell>();
@@ -56,6 +55,8 @@ internal static class CompositionRoot
         services.AddSingleton<RecordGameFinished>();
         services.AddSingleton<GetSettings>();
         services.AddSingleton<ChangeTheme>();
+
+        services.AddSingleton<SolveGame>();
     }
 
     private static void AddTheming(IServiceCollection services)
@@ -70,12 +71,30 @@ internal static class CompositionRoot
         services.AddSingleton<MainForm>();
         services.AddSingleton<CurrentGame>();
         services.AddSingleton<IDialogService, MessageBoxDialogService>();
+        services.AddSingleton<IUiTimer, WinFormsUiTimer>();
+        services.AddSingleton<ISolutionDialog, SolutionDialogService>();
+        services.AddSingleton<IStatisticsDialog, StatisticsDialogService>();
         
         services.AddSingleton<IMainView>(sp => sp.GetRequiredService<MainForm>());
         services.AddSingleton<IBoardView>(sp => sp.GetRequiredService<MainForm>());
 
         services.AddSingleton<BoardPresenter>();
         services.AddSingleton<MainPresenter>();
+
+        services.AddSingleton<GameplayPresenter>();
+        services.AddSingleton<ClockPresenter>();
+        services.AddSingleton<GameOutcomePresenter>();
+        services.AddSingleton<PersistencePresenter>();
+        services.AddSingleton<SolvePresenter>();
+        services.AddSingleton<StatisticsPresenter>();
+        services.AddSingleton<ThemePresenter>();
+
+        // 2. Rediriges IGameControlsView para que use la misma instancia de IMainView
+        services.AddSingleton<IGameControlsView>(proveedor => proveedor.GetRequiredService<IMainView>());
+
+        // 3. (Opcional) Haz lo mismo para el resto de interfaces heredadas si otros presentadores las requieren
+        services.AddSingleton<IBoardView>(proveedor => proveedor.GetRequiredService<IMainView>());
+        services.AddSingleton<IWindowLifecycleView>(proveedor => proveedor.GetRequiredService<IMainView>());
     }
 
     private static ThemeKind ResolveInitialTheme(GetSettings getSettings)

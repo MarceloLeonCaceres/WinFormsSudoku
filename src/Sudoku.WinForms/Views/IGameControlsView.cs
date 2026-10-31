@@ -22,7 +22,10 @@ public interface IGameControlsView
     event EventHandler? PauseRequested;
     event EventHandler? StatisticsRequested;
     event EventHandler? ThemeChangeRequested;
-
+    /// <summary>El usuario pulsó «Guardar».</summary>
+    event EventHandler? SaveRequested;
+    /// <summary>El usuario pulsó «Continuar» (reanudar la partida guardada).</summary>
+    event EventHandler? ContinueRequested;
     void SetDifficulty(Difficulty difficulty);
     void SetElapsedTime(TimeSpan elapsedTime);
     void SetStatus(string message);
@@ -32,4 +35,6 @@ public interface IGameControlsView
     void SetBusy(bool busy);
     void SetUndoRedoState(bool canUndo, bool canRedo);
     void SetTheme(Theme theme);
+    /// <summary>Muestra el tema en el combo SIN disparar <see cref="ThemeChangeRequested"/>.</summary>
+    void SetSelectedTheme(ThemeKind kind);
 }

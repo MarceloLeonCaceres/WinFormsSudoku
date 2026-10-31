@@ -103,6 +103,9 @@ public sealed class MainForm : Form, IMainView
     public event EventHandler<SelectionChangedEventArgs>? SelectionChanged;
     public event EventHandler<ValueEnteredEventArgs>? ValueEntered;
     public event EventHandler? ClearRequested;
+    public event EventHandler? SaveRequested;
+    public event EventHandler? ContinueRequested;
+    public event EventHandler? WindowClosing;
 
     public void SetBoard(Board board) => _boardControl.SetBoard(board);
 
@@ -431,6 +434,11 @@ public sealed class MainForm : Form, IMainView
                 return;
             }
         }
+    }
+
+    public void SetSelectedTheme(ThemeKind kind)
+    {
+        throw new NotImplementedException();
     }
 
     private sealed record Choice<T>(T Value, string Text)

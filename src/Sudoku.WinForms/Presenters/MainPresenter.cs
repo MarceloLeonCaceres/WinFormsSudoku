@@ -97,6 +97,7 @@ public sealed class MainPresenter : IDisposable
     {
         if (_generation is not null) return;                 // ocupado generando
         if (_current.Session is not { } session) return;
+        if(_current.IsFinished) return; // no se puede pausar una partida terminada
 
         if (session.IsRunning)
         {
