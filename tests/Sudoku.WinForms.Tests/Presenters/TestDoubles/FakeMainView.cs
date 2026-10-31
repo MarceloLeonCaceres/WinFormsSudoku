@@ -27,6 +27,9 @@ internal sealed class FakeMainView : IMainView
     public event EventHandler<SelectionChangedEventArgs>? SelectionChanged;
     public event EventHandler<ValueEnteredEventArgs>? ValueEntered;
     public event EventHandler? ClearRequested;
+    public event EventHandler? SaveRequested;
+    public event EventHandler? ContinueRequested;
+    public event EventHandler? WindowClosing;
 
     public Board? LastBoard { get; private set; }
     public Difficulty? ShownDifficulty { get; private set; }
@@ -59,5 +62,10 @@ internal sealed class FakeMainView : IMainView
     public void SetNotesMode(bool enabled) { }
     public void SetUndoRedoState(bool canUndo, bool canRedo) { }
     public void SetTheme(Theme theme) { }
+
+    public void SetSelectedTheme(ThemeKind kind)
+    {
+        throw new NotImplementedException();
+    }
 }
 #pragma warning restore CS0067

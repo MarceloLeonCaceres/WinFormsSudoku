@@ -141,7 +141,17 @@ public sealed class MainPresenterTests
     {
         public List<(string Title, string Message)> Errors { get; } = [];
 
+        public bool Confirm(string title, string message)
+        {
+            throw new NotImplementedException();
+        }
+
         public void ShowError(string title, string message) => Errors.Add((title, message));
+
+        public void ShowInfo(string title, string message)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     private static (MainPresenter Sut, FakeMainView View, CurrentGame Current, RecordingDialogService Dialogs)
