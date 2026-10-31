@@ -7,6 +7,8 @@ using Sudoku.Application.Games;
 using Sudoku.Application.Ports;
 using Sudoku.Application.Settings;
 using Sudoku.Application.UseCases;
+using Sudoku.WinForms.Presenters;
+using Sudoku.WinForms.Services;
 using Sudoku.WinForms.Theming;
 using Sudoku.WinForms.Views;
 
@@ -65,7 +67,15 @@ internal static class CompositionRoot
 
     private static void AddForms(IServiceCollection services)
     {
-        services.AddTransient<MainForm>(); 
+        services.AddSingleton<MainForm>();
+        services.AddSingleton<CurrentGame>();
+        services.AddSingleton<IDialogService, MessageBoxDialogService>();
+        
+        services.AddSingleton<IMainView>(sp => sp.GetRequiredService<MainForm>());
+        services.AddSingleton<IBoardView>(sp => sp.GetRequiredService<MainForm>());
+
+        services.AddSingleton<BoardPresenter>();
+        services.AddSingleton<MainPresenter>();
     }
 
     private static ThemeKind ResolveInitialTheme(GetSettings getSettings)

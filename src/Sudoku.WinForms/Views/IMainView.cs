@@ -1,16 +1,14 @@
 ﻿using Domain;
 using Sudoku.Application.Settings;
-using Sudoku.WinForms.Controls.BoardControl;
 using Sudoku.WinForms.Theming;
 
 namespace Sudoku.WinForms.Views;
 
 /// <summary>Contrato de la vista principal. No expone controles WinForms.</summary>
-public interface IMainView
+public interface IMainView : IBoardView
 {
     Difficulty SelectedDifficulty { get; }
     ThemeKind SelectedTheme { get; }
-    bool NotesMode { get; }
 
     event EventHandler? NewGameRequested;
     event EventHandler? DifficultyChanged;
@@ -23,11 +21,6 @@ public interface IMainView
     event EventHandler? StatisticsRequested;
     event EventHandler? ThemeChangeRequested;
 
-    event EventHandler<SelectionChangedEventArgs>? SelectionChanged;
-    event EventHandler<ValueEnteredEventArgs>? ValueEntered;
-    event EventHandler? ClearRequested;
-
-    void SetBoard(Board board);
     void SetDifficulty(Difficulty difficulty);
     void SetElapsedTime(TimeSpan elapsedTime);
     void SetStatus(string message);
