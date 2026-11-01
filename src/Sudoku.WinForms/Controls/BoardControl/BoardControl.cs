@@ -197,7 +197,7 @@ public sealed class BoardControl : Control
 
     private void OnThemeChanged(object? sender, EventArgs e)
     {
-        Invalidate();
+        Refresh();
     }
 
     protected override void Dispose(bool disposing)

@@ -163,6 +163,7 @@ public sealed class MainForm : Form, IMainView
         try { SelectChoice(_themeComboBox, theme.Kind); }
         finally { _updatingView = false; }
         ThemeApplier.Apply(theme, this);
+        _boardControl.Refresh();
     }
 
     protected override void OnFormClosed(FormClosedEventArgs e)
@@ -195,11 +196,16 @@ public sealed class MainForm : Form, IMainView
             _difficultyComboBox.DataSource = null;
             _difficultyComboBox.DisplayMember = nameof(Choice<Difficulty>.Text);
             _difficultyComboBox.DataSource = difficulties;
-
             var count = _difficultyComboBox.Items.Count;
-
             _difficultyComboBox.SelectedIndex = 0;
-
+            
+            var themes = Enum.GetValues<ThemeKind>()
+                .Select(t => new Choice<ThemeKind>(t, t.ToString()))
+                .ToArray();
+            _themeComboBox.DataSource = null;
+            _themeComboBox.DisplayMember = nameof(Choice<ThemeKind>.Text);
+            _themeComboBox.DataSource = themes;
+            _themeComboBox.SelectedIndex= 1;
         }
         finally
         {
@@ -438,7 +444,15 @@ public sealed class MainForm : Form, IMainView
 
     public void SetSelectedTheme(ThemeKind kind)
     {
-        throw new NotImplementedException();
+        _updatingView = true;
+        try
+        {
+            SelectChoice(_themeComboBox, kind);
+        }
+        finally
+        {
+            _updatingView = false;
+        }
     }
 
     private sealed record Choice<T>(T Value, string Text)

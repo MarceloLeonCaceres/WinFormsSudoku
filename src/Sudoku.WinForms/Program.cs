@@ -15,11 +15,8 @@ internal static class Program
         ApplicationConfiguration.Initialize();
 
         using var provider = CompositionRoot.Build();
-        // Program.cs: resolver los presenters los instancia y mantiene vivas sus suscripciones;
-        // el contenedor los libera al hacer Dispose.
         var form = provider.GetRequiredService<MainForm>();
-        _ = provider.GetRequiredService<BoardPresenter>();
-        _ = provider.GetRequiredService<MainPresenter>();
+        CompositionRoot.ActivatePresenters(provider);
         System.Windows.Forms.Application.Run(form);
     }
 }

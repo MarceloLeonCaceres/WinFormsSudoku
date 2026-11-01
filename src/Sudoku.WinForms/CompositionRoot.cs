@@ -74,13 +74,15 @@ internal static class CompositionRoot
         services.AddSingleton<IUiTimer, WinFormsUiTimer>();
         services.AddSingleton<ISolutionDialog, SolutionDialogService>();
         services.AddSingleton<IStatisticsDialog, StatisticsDialogService>();
-        
+
+        // Una sola instancia de MainForm, expuesta por cada contrato de vista (ISP).
         services.AddSingleton<IMainView>(sp => sp.GetRequiredService<MainForm>());
         services.AddSingleton<IBoardView>(sp => sp.GetRequiredService<MainForm>());
+        services.AddSingleton<IGameControlsView>(sp => sp.GetRequiredService<MainForm>());
+        services.AddSingleton<IWindowLifecycleView>(sp => sp.GetRequiredService<MainForm>());
 
         services.AddSingleton<BoardPresenter>();
         services.AddSingleton<MainPresenter>();
-
         services.AddSingleton<GameplayPresenter>();
         services.AddSingleton<ClockPresenter>();
         services.AddSingleton<GameOutcomePresenter>();
@@ -88,15 +90,25 @@ internal static class CompositionRoot
         services.AddSingleton<SolvePresenter>();
         services.AddSingleton<StatisticsPresenter>();
         services.AddSingleton<ThemePresenter>();
-
-        // 2. Rediriges IGameControlsView para que use la misma instancia de IMainView
-        services.AddSingleton<IGameControlsView>(proveedor => proveedor.GetRequiredService<IMainView>());
-
-        // 3. (Opcional) Haz lo mismo para el resto de interfaces heredadas si otros presentadores las requieren
-        services.AddSingleton<IBoardView>(proveedor => proveedor.GetRequiredService<IMainView>());
-        services.AddSingleton<IWindowLifecycleView>(proveedor => proveedor.GetRequiredService<IMainView>());
     }
 
+    /// <summary>
+    /// Instancia los presenters: su trabajo (suscribirse a eventos, arrancar el timer) ocurre en el
+    /// constructor, y un singleton que nadie resuelve nunca se construye.
+    /// El contenedor los libera al hacer Dispose.
+    /// </summary>
+    public static void ActivatePresenters(IServiceProvider provider)
+    {
+        _ = provider.GetRequiredService<BoardPresenter>();
+        _ = provider.GetRequiredService<MainPresenter>();
+        _ = provider.GetRequiredService<GameplayPresenter>();
+        _ = provider.GetRequiredService<ClockPresenter>();
+        _ = provider.GetRequiredService<GameOutcomePresenter>();
+        _ = provider.GetRequiredService<PersistencePresenter>();
+        _ = provider.GetRequiredService<SolvePresenter>();
+        _ = provider.GetRequiredService<StatisticsPresenter>();
+        _ = provider.GetRequiredService<ThemePresenter>();
+    }
     private static ThemeKind ResolveInitialTheme(GetSettings getSettings)
     {
         try
