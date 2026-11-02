@@ -7,6 +7,7 @@ namespace Sudoku.WinForms.Controls.BoardControl;
 public sealed class BoardControl : Control
 {
     private readonly IThemeService _themeService;
+    private IReadOnlySet<Position>? _mistakes;
 
     private Board _board = Board.Empty;
     private Position? _selectedPosition;
@@ -107,7 +108,7 @@ public sealed class BoardControl : Control
             ClientRectangle,
             geometry,
             _board,
-            _selectedPosition,
+            _selectedPosition, _mistakes,
             _themeService.Current);
 
         base.OnPaint(e);
@@ -206,6 +207,11 @@ public sealed class BoardControl : Control
             _themeService.ThemeChanged -= OnThemeChanged;
 
         base.Dispose(disposing);
+    }
+    public void SetMistakes(IReadOnlySet<Position>? mistakes)
+    {
+        _mistakes = mistakes;
+        Invalidate();
     }
 }
 

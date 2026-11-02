@@ -6,4 +6,5 @@ internal sealed class SettingsDto
 
     public required int Version { get; init; }
     public required string Theme { get; init; }
+    public bool ShowMistakes { get; init; }
 }

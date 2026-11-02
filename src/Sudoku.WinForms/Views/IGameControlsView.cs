@@ -9,6 +9,8 @@ public interface IGameControlsView
 {
     Difficulty SelectedDifficulty { get; }
     ThemeKind SelectedTheme { get; }
+    bool ShowMistakes { get; }
+    event EventHandler? ShowMistakesChanged;
 
     event EventHandler? NewGameRequested;
     /// <summary>El usuario pidió cancelar la generación en curso (el botón de nueva partida hace de "Cancelar").</summary>
@@ -37,4 +39,5 @@ public interface IGameControlsView
     void SetTheme(Theme theme);
     /// <summary>Muestra el tema en el combo SIN disparar <see cref="ThemeChangeRequested"/>.</summary>
     void SetSelectedTheme(ThemeKind kind);
+    void SetShowMistakes(bool enabled);
 }

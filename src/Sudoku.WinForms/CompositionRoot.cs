@@ -57,6 +57,9 @@ internal static class CompositionRoot
         services.AddSingleton<ChangeTheme>();
 
         services.AddSingleton<SolveGame>();
+
+        services.AddSingleton<GetMistakes>();
+        services.AddSingleton<ChangeShowMistakes>();
     }
 
     private static void AddTheming(IServiceCollection services)
@@ -90,6 +93,8 @@ internal static class CompositionRoot
         services.AddSingleton<SolvePresenter>();
         services.AddSingleton<StatisticsPresenter>();
         services.AddSingleton<ThemePresenter>();
+
+        services.AddSingleton<MistakesPresenter>();
     }
 
     /// <summary>
@@ -108,6 +113,7 @@ internal static class CompositionRoot
         _ = provider.GetRequiredService<SolvePresenter>();
         _ = provider.GetRequiredService<StatisticsPresenter>();
         _ = provider.GetRequiredService<ThemePresenter>();
+        _ = provider.GetRequiredService<MistakesPresenter>();
     }
     private static ThemeKind ResolveInitialTheme(GetSettings getSettings)
     {

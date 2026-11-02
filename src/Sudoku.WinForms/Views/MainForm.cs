@@ -13,6 +13,7 @@ public sealed class MainForm : Form, IMainView
 
     private readonly IThemeService _themeService;
     private readonly BoardControl _boardControl;
+    private readonly CheckBox _showMistakesCheckBox = new() { Text = "Marcar Errores", AutoSize = true };
     private bool _isInitializing;
     private readonly Label _timerLabel = new()
     {
@@ -89,6 +90,7 @@ public sealed class MainForm : Form, IMainView
         (_themeComboBox.SelectedItem as Choice<ThemeKind>)?.Value ?? ThemeKind.Dark;
 
     public bool NotesMode => _notesButton.Checked;
+    public bool ShowMistakes => _showMistakesCheckBox.Checked;
 
     public event EventHandler? NewGameRequested;
     public event EventHandler? DifficultyChanged;
@@ -107,6 +109,7 @@ public sealed class MainForm : Form, IMainView
     public event EventHandler? SaveRequested;
     public event EventHandler? ContinueRequested;
     public event EventHandler? WindowClosing;
+    public event EventHandler? ShowMistakesChanged;
 
     public void SetBoard(Board board) => _boardControl.SetBoard(board);
 
@@ -382,6 +385,12 @@ public sealed class MainForm : Form, IMainView
         _boardControl.SelectionChanged += (_, e) => SelectionChanged?.Invoke(this, e);
         _boardControl.ValueEntered += (_, e) => ValueEntered?.Invoke(this, e);
         _boardControl.ClearRequested += (_, _) => ClearRequested?.Invoke(this, EventArgs.Empty);
+
+        _showMistakesCheckBox.CheckedChanged += (_, _) =>
+        {
+            if (!_updatingView)
+                ShowMistakesChanged?.Invoke(this, EventArgs.Empty);
+        };
     }
 
     private void UpdateInteractionState()
@@ -465,5 +474,21 @@ public sealed class MainForm : Form, IMainView
     private sealed record Choice<T>(T Value, string Text)
     {
         public override string ToString() => Text;
+    }
+    public void SetShowMistakes(bool enabled)
+    {
+        _updatingView = true;
+        try
+        {
+            _showMistakesCheckBox.Checked = enabled;
+        }
+        finally
+        {
+            _updatingView = false;
+        }
+    }
+    public void SetMistakes(IReadOnlySet<Position>? mistakes)
+    {
+        _boardControl.SetMistakes(mistakes);
     }
 }

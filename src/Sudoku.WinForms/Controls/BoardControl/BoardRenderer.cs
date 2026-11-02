@@ -14,7 +14,7 @@ internal static class BoardRenderer
         Rectangle clientBounds,
         BoardGeometry geometry,
         Board board,
-        Position? selectedPosition,
+        Position? selectedPosition, IReadOnlySet<Position>? mistakes,
         Theme theme)
     {
         var graphicsState = graphics.Save();
@@ -30,7 +30,7 @@ internal static class BoardRenderer
             if (geometry.CellSize <= 0)
                 return;
 
-            DrawCells(graphics, geometry, board, selectedPosition, theme);
+            DrawCells(graphics, geometry, board, selectedPosition, mistakes, theme);
             DrawGrid(graphics, geometry, theme);
         }
         finally
@@ -43,12 +43,13 @@ internal static class BoardRenderer
         Graphics graphics,
         BoardGeometry geometry,
         Board board,
-        Position? selectedPosition,
+        Position? selectedPosition, IReadOnlySet<Position>? mistakes,
         Theme theme)
     {
         var relatedCells = GetRelatedCells(selectedPosition);
         var matchingCells = GetMatchingCells(board, selectedPosition);
-        var conflicts = SudokuRules.FindConflicts(board);
+        //var conflicts = SudokuRules.FindConflicts(board);
+        var flagged = mistakes ?? SudokuRules.FindConflicts(board);
 
         using var boardBrush = new SolidBrush(theme.BoardBackground);
         using var relatedBrush = new SolidBrush(theme.RelatedCell);
@@ -94,7 +95,7 @@ internal static class BoardRenderer
                 graphics,
                 cellBounds,
                 board[position],
-                conflicts.Contains(position),
+                flagged.Contains(position),
                 valueFont,
                 givenFont,
                 noteFont,

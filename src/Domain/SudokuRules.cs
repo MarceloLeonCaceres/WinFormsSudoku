@@ -54,7 +54,26 @@ public static class SudokuRules
 
         return conflicts;
     }
+    
+    /// <summary>Celdas del jugador cuyo valor difiere de la solución. Las dadas, las vacías y las notas nunca cuentan.</summary>
+    public static IReadOnlySet<Position> FindMistakes(Board board, Board solution)
+    {
+        ArgumentNullException.ThrowIfNull(board);
+        ArgumentNullException.ThrowIfNull(solution);
 
+        var mistakes = new HashSet<Position>();
+        foreach (var position in Position.All)
+        {
+            var cell = board[position];
+            if (cell.IsGiven || cell.Value is not { } value)
+                continue;
+
+            if (solution[position].Value != value)
+                mistakes.Add(position);
+        }
+
+        return mistakes;
+    }
     public static bool IsComplete(Board board)
     {
         ArgumentNullException.ThrowIfNull(board);

@@ -13,4 +13,6 @@ public interface IBoardView
     event EventHandler? ClearRequested;
 
     void SetBoard(Board board);
+    /// <summary>Celdas a marcar como error. <c>null</c> = aviso de errores apagado: el tablero marca solo duplicados visibles.</summary>
+    void SetMistakes(IReadOnlySet<Position>? mistakes);
 }
