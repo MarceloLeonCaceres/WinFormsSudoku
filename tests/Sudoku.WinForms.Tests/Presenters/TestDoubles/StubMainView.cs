@@ -12,7 +12,14 @@ public sealed class StubMainView : IMainView
     public Difficulty SelectedDifficulty { get; set; } = Difficulty.Easy;
     public ThemeKind SelectedTheme { get; set; } = ThemeKind.Dark;
     public bool NotesMode { get; set; }
+    public bool ShowMistakes { get; set; }
+    public event EventHandler? ShowMistakesChanged;
+    public IReadOnlySet<Position>? Mistakes { get; private set; }
+    public bool? ShownMistakesOption { get; private set; }
 
+    public void SetMistakes(IReadOnlySet<Position>? mistakes) => Mistakes = mistakes;
+    public void SetShowMistakes(bool enabled) { ShowMistakes = enabled; ShownMistakesOption = enabled; }
+    public void RaiseShowMistakesChanged(bool value) { ShowMistakes = value; ShowMistakesChanged?.Invoke(this, EventArgs.Empty); }
     public event EventHandler<SelectionChangedEventArgs>? SelectionChanged;
     public event EventHandler<ValueEnteredEventArgs>? ValueEntered;
     public event EventHandler? ClearRequested;

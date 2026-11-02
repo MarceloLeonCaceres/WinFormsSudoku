@@ -30,6 +30,7 @@ internal sealed class FakeMainView : IMainView
     public event EventHandler? SaveRequested;
     public event EventHandler? ContinueRequested;
     public event EventHandler? WindowClosing;
+    public event EventHandler? ShowMistakesChanged;
 
     public Board? LastBoard { get; private set; }
     public Difficulty? ShownDifficulty { get; private set; }
@@ -38,6 +39,8 @@ internal sealed class FakeMainView : IMainView
     public List<bool> BusyChanges { get; } = [];
     public List<string> Statuses { get; } = [];
     public List<bool> PausedChanges { get; } = [];
+
+    public bool ShowMistakes => throw new NotImplementedException();
 
     public void RaiseNewGameRequested() => NewGameRequested?.Invoke(this, EventArgs.Empty);
     public void RaiseCancelRequested() => CancelRequested?.Invoke(this, EventArgs.Empty);
@@ -64,6 +67,16 @@ internal sealed class FakeMainView : IMainView
     public void SetTheme(Theme theme) { }
 
     public void SetSelectedTheme(ThemeKind kind)
+    {
+        throw new NotImplementedException();
+    }
+
+    public void SetMistakes(IReadOnlySet<Position>? mistakes)
+    {
+        throw new NotImplementedException();
+    }
+
+    public void SetShowMistakes(bool enabled)
     {
         throw new NotImplementedException();
     }

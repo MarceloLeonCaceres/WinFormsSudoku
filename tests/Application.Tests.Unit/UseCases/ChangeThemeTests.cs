@@ -1,5 +1,6 @@
 ﻿using Application.Tests.Unit.TestData;
 using Sudoku.Application.Settings;
+using Sudoku.Application.Tests.TestDoubles;
 using Sudoku.Application.UseCases;
 
 namespace Application.Tests.Unit.UseCases;
@@ -31,5 +32,14 @@ public class ChangeThemeTests
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => new ChangeTheme(_repository).Execute((ThemeKind)99));
         Assert.Equal(0, _repository.SaveCount);
+    }
+    [Fact]
+    public void Keeps_ShowMistakes_when_the_theme_changes()
+    {
+        var repository = new FakeSettingsRepository { Stored = new AppSettings(ThemeKind.Light, true) };
+
+        new ChangeTheme(repository).Execute(ThemeKind.Dark);
+
+        Assert.True(repository.Stored.ShowMistakes);
     }
 }

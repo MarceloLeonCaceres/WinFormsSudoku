@@ -23,4 +23,9 @@ internal sealed class FakeBoardView : IBoardView
     public void RaiseSelection(Position position) => SelectionChanged?.Invoke(this, new SelectionChangedEventArgs(position));
     public void RaiseValueEntered(int value) => ValueEntered?.Invoke(this, new ValueEnteredEventArgs(value));
     public void RaiseClear() => ClearRequested?.Invoke(this, EventArgs.Empty);
+
+    public void SetMistakes(IReadOnlySet<Position>? mistakes)
+    {
+        throw new NotImplementedException();
+    }
 }
