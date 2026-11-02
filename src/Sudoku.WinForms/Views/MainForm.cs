@@ -1,6 +1,7 @@
 using Domain;
 using Sudoku.Application.Settings;
 using Sudoku.WinForms.Controls.BoardControl;
+using Sudoku.WinForms.Formatting;
 using Sudoku.WinForms.Theming;
 
 namespace Sudoku.WinForms.Views;
@@ -140,11 +141,11 @@ public sealed class MainForm : Form, IMainView
         _pauseButton.Text = paused ? "Continuar" : "Pausar";
         UpdateInteractionState();
     }
-    
+
     public void SetBusy(bool busy)
     {
         _isBusy = busy;
-    _newGameButton.Text = busy ? "Cancelar" : "Nueva partida";
+        _newGameButton.Text = busy ? "Cancelar" : "Nueva partida";
         UseWaitCursor = busy;
         UpdateInteractionState();
     }
@@ -181,6 +182,7 @@ public sealed class MainForm : Form, IMainView
         FormBorderStyle = FormBorderStyle.Sizable;
         Font = new Font("Segoe UI", 10F, FontStyle.Regular);
         KeyPreview = false;
+        Icon = AppIcon.Value;
     }
 
     private void ConfigureSelectors()
@@ -198,14 +200,14 @@ public sealed class MainForm : Form, IMainView
             _difficultyComboBox.DataSource = difficulties;
             var count = _difficultyComboBox.Items.Count;
             _difficultyComboBox.SelectedIndex = 0;
-            
+
             var themes = Enum.GetValues<ThemeKind>()
                 .Select(t => new Choice<ThemeKind>(t, t.ToString()))
                 .ToArray();
             _themeComboBox.DataSource = null;
             _themeComboBox.DisplayMember = nameof(Choice<ThemeKind>.Text);
             _themeComboBox.DataSource = themes;
-            _themeComboBox.SelectedIndex= 1;
+            _themeComboBox.SelectedIndex = 1;
         }
         finally
         {
@@ -427,6 +429,11 @@ public sealed class MainForm : Form, IMainView
     {
         control.Margin = new Padding(0, 2, 0, 2);
         parent.Controls.Add(control);
+    }
+
+    private void InitializeComponent()
+    {
+
     }
 
     private static void SelectChoice<T>(ComboBox comboBox, T value)

@@ -97,6 +97,11 @@ public sealed class StatisticsForm : Form
         Font = bold ? _boldFont : DefaultFont
     };
 
+    private void InitializeComponent()
+    {
+
+    }
+
     protected override void Dispose(bool disposing)
     {
         if (disposing)

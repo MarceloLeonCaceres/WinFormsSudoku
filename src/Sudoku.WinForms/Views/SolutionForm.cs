@@ -35,4 +35,9 @@ public sealed class SolutionForm : Form
         Close();
         return true;
     }
+
+    private void InitializeComponent()
+    {
+
+    }
 }
